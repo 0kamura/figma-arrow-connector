@@ -262,6 +262,66 @@
       width: 16px;
       height: 16px;
     }
+    .color-section {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .color-row {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+    }
+    .color-row input[type="color"] {
+      width: 32px;
+      height: 32px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      cursor: pointer;
+      padding: 2px;
+      background: #fff;
+      flex-shrink: 0;
+    }
+    .color-hex {
+      font-size: 11px;
+      color: #666;
+      font-family: monospace;
+      min-width: 58px;
+    }
+    .swatch-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+    }
+    .swatch {
+      width: 20px;
+      height: 20px;
+      border-radius: 4px;
+      border: 1.5px solid rgba(0,0,0,0.1);
+      cursor: pointer;
+      transition: all 0.1s;
+      position: relative;
+    }
+    .swatch:hover {
+      transform: scale(1.2);
+      z-index: 1;
+    }
+    .swatch.active {
+      border-color: #333;
+      box-shadow: 0 0 0 2px rgba(0,0,0,0.15);
+    }
+    .swatch-group-label {
+      font-size: 10px;
+      color: #aaa;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+      margin-top: 2px;
+    }
+    .no-swatches {
+      font-size: 10px;
+      color: #ccc;
+    }
     .label-input {
       width: 100%;
       height: 32px;
@@ -399,11 +459,15 @@
 
     <div class="section">
       <div class="section-label">スタイル設定</div>
-      <div class="options-grid">
-        <div class="option-group">
-          <label>カラー</label>
+      <div class="color-section">
+        <label class="option-group-label" style="font-size:11px;color:#666;font-weight:500;">カラー</label>
+        <div class="color-row">
           <input type="color" id="colorPicker" value="#333333" />
+          <span class="color-hex" id="colorHex">#333333</span>
         </div>
+        <div id="swatchPanel"></div>
+      </div>
+      <div class="options-grid" style="margin-top: 8px;">
         <div class="option-group">
           <label>線の太さ <span class="range-value" id="weightValue">2px</span></label>
           <input type="range" id="strokeWeight" min="1" max="8" value="2" />
@@ -480,11 +544,15 @@
 
     <div class="section">
       <div class="section-label">スタイル設定</div>
-      <div class="options-grid">
-        <div class="option-group">
-          <label>カラー</label>
+      <div class="color-section">
+        <label class="option-group-label" style="font-size:11px;color:#666;font-weight:500;">カラー</label>
+        <div class="color-row">
           <input type="color" id="editColorPicker" value="#333333" />
+          <span class="color-hex" id="editColorHex">#333333</span>
         </div>
+        <div id="editSwatchPanel"></div>
+      </div>
+      <div class="options-grid" style="margin-top: 8px;">
         <div class="option-group">
           <label>線の太さ <span class="range-value" id="editWeightValue">2px</span></label>
           <input type="range" id="editStrokeWeight" min="1" max="8" value="2" />
@@ -654,8 +722,84 @@
       editArrowValue.textContent = editArrowSizeInput.value;
     });
 
+    // ---- Color picker + swatch sync ----
+    const colorPicker = document.getElementById('colorPicker');
+    const colorHex = document.getElementById('colorHex');
+    const editColorPicker = document.getElementById('editColorPicker');
+    const editColorHex = document.getElementById('editColorHex');
+
+    colorPicker.addEventListener('input', () => {
+      colorHex.textContent = colorPicker.value;
+      clearSwatchActive('swatchPanel');
+    });
+    editColorPicker.addEventListener('input', () => {
+      editColorHex.textContent = editColorPicker.value;
+      clearSwatchActive('editSwatchPanel');
+    });
+
+    function clearSwatchActive(panelId) {
+      document.querySelectorAll('#' + panelId + ' .swatch').forEach(s => s.classList.remove('active'));
+    }
+
+    function setColor(pickerId, hexId, hex, panelId) {
+      document.getElementById(pickerId).value = hex;
+      document.getElementById(hexId).textContent = hex;
+      clearSwatchActive(panelId);
+    }
+
+    let allSwatches = [];
+
+    function renderSwatchPanel(panelId, pickerId, hexId) {
+      const panel = document.getElementById(panelId);
+      panel.innerHTML = '';
+
+      if (allSwatches.length === 0) {
+        panel.innerHTML = '<div class="no-swatches">スタイル/バリアブルなし</div>';
+        return;
+      }
+
+      const groups = {};
+      for (const s of allSwatches) {
+        if (!groups[s.group]) groups[s.group] = [];
+        groups[s.group].push(s);
+      }
+
+      const groupLabels = { styles: 'カラースタイル', variables: 'バリアブル' };
+
+      for (const [group, items] of Object.entries(groups)) {
+        const label = document.createElement('div');
+        label.className = 'swatch-group-label';
+        label.textContent = groupLabels[group] || group;
+        panel.appendChild(label);
+
+        const grid = document.createElement('div');
+        grid.className = 'swatch-grid';
+
+        for (const item of items) {
+          const swatch = document.createElement('div');
+          swatch.className = 'swatch';
+          swatch.style.background = item.hex;
+          swatch.title = item.name;
+          swatch.addEventListener('click', () => {
+            setColor(pickerId, hexId, item.hex, panelId);
+            grid.querySelectorAll('.swatch').forEach(s => s.classList.remove('active'));
+            panel.querySelectorAll('.swatch').forEach(s => s.classList.remove('active'));
+            swatch.classList.add('active');
+          });
+          grid.appendChild(swatch);
+        }
+        panel.appendChild(grid);
+      }
+    }
+
     window.onmessage = (event) => {
       const msg = event.data.pluginMessage;
+
+      if (msg.type === 'color-swatches') {
+        allSwatches = msg.swatches;
+        renderSwatchPanel('swatchPanel', 'colorPicker', 'colorHex');
+        renderSwatchPanel('editSwatchPanel', 'editColorPicker', 'editColorHex');
+      }
 
       if (msg.type === 'selection-update') {
         frames = msg.frames;
@@ -684,6 +828,7 @@
 
         const opts = msg.options;
         document.getElementById('editColorPicker').value = opts.color;
+        document.getElementById('editColorHex').textContent = opts.color;
         editStrokeWeight.value = opts.strokeWeight;
         editWeightValue.textContent = opts.strokeWeight + 'px';
         editArrowSizeInput.value = opts.arrowSize;

@@ -2,9 +2,17 @@
 // Arrow Connector Plugin - FigJam風の矢印でFrameを繋ぐ
 figma.showUI(__html__, { width: 320, height: 520 });
 const PLUGIN_DATA_KEY = "arrow-connector-data";
+// ノードの絶対座標バウンディングボックスを取得
+function getAbsBounds(node) {
+    const bb = node.absoluteBoundingBox;
+    if (bb)
+        return bb;
+    // fallback (absoluteBoundingBox が null の場合)
+    return { x: node.x, y: node.y, width: node.width, height: node.height };
+}
 // フレームの8接続点を取得（辺の中点4 + 角4）
 function getAllConnectionPoints(node) {
-    const { x, y, width, height } = node;
+    const { x, y, width, height } = getAbsBounds(node);
     return [
         { point: { x: x + width / 2, y: y }, side: "top" },
         { point: { x: x + width / 2, y: y + height }, side: "bottom" },
@@ -22,7 +30,7 @@ function distance(a, b) {
 }
 // 指定された位置の接続点を取得
 function getConnectionPoint(node, side) {
-    const { x, y, width, height } = node;
+    const { x, y, width, height } = getAbsBounds(node);
     switch (side) {
         case "top":
             return { point: { x: x + width / 2, y: y }, side: "top" };
@@ -266,7 +274,18 @@ async function createLabel(pos, text, color, strokeWeight) {
     // テキストの中心を中間点に合わせる
     label.x = pos.x - label.width / 2;
     label.y = pos.y - label.height / 2;
-    return label;
+    // 背景矩形（線を隠す） - ページの背景色を使用
+    const padding = 4;
+    const bg = figma.createRectangle();
+    bg.x = label.x - padding;
+    bg.y = label.y - padding;
+    bg.resize(label.width + padding * 2, label.height + padding * 2);
+    const pageBg = figma.currentPage.backgrounds[0];
+    const bgColor = (pageBg && pageBg.type === "SOLID") ? pageBg.color : { r: 1, g: 1, b: 1 };
+    bg.fills = [{ type: "SOLID", color: bgColor }];
+    bg.strokes = [];
+    bg.cornerRadius = 3;
+    return [bg, label];
 }
 // 矢印を描画（新規作成 or 既存グループを再描画）
 async function drawArrow(nodeA, nodeB, options, existingGroup) {
@@ -298,14 +317,14 @@ async function drawArrow(nodeA, nodeB, options, existingGroup) {
             line.dashPattern = [8, 6];
         }
         children.push(line);
-        const { angle } = bezierPointAndTangent(start.point, cp1, cp2, end.point, 1);
-        children.push(createArrowhead(end.point, angle, options.arrowSize, color));
-        // カーブの中間点にラベル
+        // ラベル（線の上、矢じりの下）
         if (options.label) {
             const mid = bezierPointAndTangent(start.point, cp1, cp2, end.point, 0.5);
-            const labelNode = await createLabel(mid.point, options.label, color, options.strokeWeight);
-            children.push(labelNode);
+            const labelNodes = await createLabel(mid.point, options.label, color, options.strokeWeight);
+            children.push(...labelNodes);
         }
+        const { angle } = bezierPointAndTangent(start.point, cp1, cp2, end.point, 1);
+        children.push(createArrowhead(end.point, angle, options.arrowSize, color));
     }
     else {
         // --- 直角折れ線（エルボー）矢印 ---
@@ -347,18 +366,17 @@ async function drawArrow(nodeA, nodeB, options, existingGroup) {
             line.dashPattern = [8, 6];
         }
         children.push(line);
+        // ラベル（線の上、矢じりの下）
+        if (options.label) {
+            const midPt = getPathMidpoint(allPoints);
+            const labelNodes = await createLabel(midPt, options.label, color, options.strokeWeight);
+            children.push(...labelNodes);
+        }
         // 矢じりの角度は最後のセグメントから算出
-        const lastSeg = rPoints.length;
         const prevPt = allPoints[allPoints.length - 2];
         const endPt = allPoints[allPoints.length - 1];
         const angle = Math.atan2(endPt.y - prevPt.y, endPt.x - prevPt.x);
         children.push(createArrowhead(end.point, angle, options.arrowSize, color));
-        // エルボーの中間点にラベル
-        if (options.label) {
-            const midPt = getPathMidpoint(allPoints);
-            const labelNode = await createLabel(midPt, options.label, color, options.strokeWeight);
-            children.push(labelNode);
-        }
     }
     // 既存グループがあれば中身を入れ替え、なければ新規作成
     let groupNode;
@@ -442,6 +460,108 @@ function sendSelectionState() {
 figma.on("selectionchange", sendSelectionState);
 // 初期状態送信
 sendSelectionState();
+// カラースタイル・バリアブルをUIに送信
+async function sendColorSwatches() {
+    const swatches = [];
+    // ローカルペイントスタイル
+    try {
+        const paintStyles = await figma.getLocalPaintStylesAsync();
+        for (const style of paintStyles) {
+            if (style.paints.length > 0 && style.paints[0].type === "SOLID") {
+                const c = style.paints[0].color;
+                swatches.push({
+                    name: style.name,
+                    hex: rgbToHex(c),
+                    group: "styles",
+                });
+            }
+        }
+    }
+    catch (_a) { }
+    // カラーバリアブル
+    try {
+        const colorVars = await figma.variables.getLocalVariablesAsync("COLOR");
+        for (const v of colorVars) {
+            // デフォルトモードの値を取得
+            const collection = await figma.variables.getVariableCollectionByIdAsync(v.variableCollectionId);
+            if (!collection)
+                continue;
+            const modeId = collection.defaultModeId;
+            const value = v.valuesByMode[modeId];
+            if (value && typeof value === "object" && "r" in value) {
+                swatches.push({
+                    name: v.name,
+                    hex: rgbToHex(value),
+                    group: "variables",
+                });
+            }
+        }
+    }
+    catch (_b) { }
+    figma.ui.postMessage({ type: "color-swatches", swatches });
+}
+sendColorSwatches();
+// --- フレーム移動の自動追従 ---
+// frameId → arrowGroupId[] のマッピングを構築
+function buildArrowIndex() {
+    const index = new Map();
+    for (const node of figma.currentPage.children) {
+        const data = getArrowData(node);
+        if (data && node.type === "GROUP") {
+            for (const fid of [data.sourceId, data.targetId]) {
+                const list = index.get(fid) || [];
+                list.push(node.id);
+                index.set(fid, list);
+            }
+        }
+    }
+    return index;
+}
+let arrowIndex = buildArrowIndex();
+let updateTimer = null;
+let pendingNodeIds = new Set();
+// documentchange でフレーム移動を検知
+figma.on("documentchange", (event) => {
+    for (const change of event.documentChanges) {
+        if (change.type === "PROPERTY_CHANGE") {
+            const nodeId = change.id;
+            if (arrowIndex.has(nodeId)) {
+                pendingNodeIds.add(nodeId);
+            }
+        }
+    }
+    // 連続的な移動をデバウンス（100ms）
+    if (pendingNodeIds.size > 0 && updateTimer === null) {
+        updateTimer = setTimeout(async () => {
+            const arrowIdsToUpdate = new Set();
+            for (const nodeId of pendingNodeIds) {
+                const arrowIds = arrowIndex.get(nodeId);
+                if (arrowIds) {
+                    for (const aid of arrowIds) {
+                        arrowIdsToUpdate.add(aid);
+                    }
+                }
+            }
+            pendingNodeIds.clear();
+            updateTimer = null;
+            for (const arrowId of arrowIdsToUpdate) {
+                const arrowGroup = figma.getNodeById(arrowId);
+                if (!arrowGroup)
+                    continue;
+                const data = getArrowData(arrowGroup);
+                if (!data)
+                    continue;
+                const source = figma.getNodeById(data.sourceId);
+                const target = figma.getNodeById(data.targetId);
+                if (!source || !target)
+                    continue;
+                await drawArrow(source, target, data.options, arrowGroup);
+            }
+            // インデックスを再構築
+            arrowIndex = buildArrowIndex();
+        }, 100);
+    }
+});
 // UIからのメッセージ処理
 figma.ui.onmessage = async (msg) => {
     if (msg.type === "connect") {
@@ -455,6 +575,8 @@ figma.ui.onmessage = async (msg) => {
         const options = { color, strokeWeight, curved, arrowSize, dashed, startSide: startSide || "auto", endSide: endSide || "auto", label: label || "" };
         const arrow = await drawArrow(source, target, options);
         figma.currentPage.selection = [arrow];
+        figma.viewport.scrollAndZoomIntoView([arrow]);
+        arrowIndex = buildArrowIndex();
         figma.notify(`${source.name} → ${target.name} を接続しました`);
     }
     if (msg.type === "update-arrow") {
@@ -478,6 +600,7 @@ figma.ui.onmessage = async (msg) => {
         const options = { color, strokeWeight, curved, arrowSize, dashed, startSide: startSide || "auto", endSide: endSide || "auto", label: label || "" };
         const newArrow = await drawArrow(source, target, options, arrowGroup);
         figma.currentPage.selection = [newArrow];
+        arrowIndex = buildArrowIndex();
         figma.notify("矢印を更新しました");
     }
     if (msg.type === "refresh-position") {
@@ -540,6 +663,7 @@ figma.ui.onmessage = async (msg) => {
         const options = { color, strokeWeight, curved, arrowSize, dashed, startSide: startSide || "auto", endSide: endSide || "auto", label: label || "" };
         const newArrow = await drawArrow(source, target, options, arrowGroup);
         figma.currentPage.selection = [newArrow];
+        arrowIndex = buildArrowIndex();
         figma.notify("始点と終点を入れ替えました");
     }
     if (msg.type === "delete-arrow") {
@@ -547,6 +671,7 @@ figma.ui.onmessage = async (msg) => {
         const arrowGroup = figma.getNodeById(arrowId);
         if (arrowGroup) {
             arrowGroup.remove();
+            arrowIndex = buildArrowIndex();
             figma.notify("矢印を削除しました");
         }
     }
