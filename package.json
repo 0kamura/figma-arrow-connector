@@ -1,0 +1,12 @@
+{
+  "name": "arrow-connector",
+  "version": "1.0.0",
+  "description": "Connect frames with FigJam-style arrows in Figma Design",
+  "scripts": {
+    "build": "tsc"
+  },
+  "devDependencies": {
+    "@figma/plugin-typings": "^1.100.0",
+    "typescript": "^5.3.0"
+  }
+}

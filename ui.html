@@ -1,0 +1,837 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Inter', -apple-system, sans-serif;
+      font-size: 12px;
+      color: #333;
+      padding: 16px;
+      background: #fff;
+    }
+    h2 {
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 12px;
+      color: #1a1a1a;
+    }
+    .mode-label {
+      font-size: 11px;
+      font-weight: 600;
+      color: #7B61FF;
+      background: #F0EDFF;
+      border-radius: 4px;
+      padding: 2px 8px;
+      display: inline-block;
+      margin-bottom: 8px;
+    }
+    .section {
+      margin-bottom: 14px;
+    }
+    .section-label {
+      font-size: 11px;
+      font-weight: 600;
+      color: #888;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 6px;
+    }
+    .frame-list {
+      background: #f5f5f5;
+      border-radius: 8px;
+      padding: 8px;
+      min-height: 48px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .frame-item {
+      background: #fff;
+      border-radius: 6px;
+      padding: 8px 10px;
+      font-size: 12px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      border: 1px solid #e5e5e5;
+    }
+    .frame-item .icon {
+      width: 14px;
+      height: 14px;
+      border-radius: 3px;
+      flex-shrink: 0;
+    }
+    .frame-item .name {
+      flex: 1;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .frame-item .badge {
+      font-size: 10px;
+      color: #fff;
+      border-radius: 4px;
+      padding: 1px 6px;
+      font-weight: 600;
+    }
+    .empty-state {
+      color: #aaa;
+      font-size: 11px;
+      text-align: center;
+      padding: 12px;
+    }
+    .options-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    .option-group {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .option-group label {
+      font-size: 11px;
+      color: #666;
+      font-weight: 500;
+    }
+    .option-group input[type="color"] {
+      width: 100%;
+      height: 32px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      cursor: pointer;
+      padding: 2px;
+      background: #fff;
+    }
+    .option-group input[type="range"] {
+      width: 100%;
+      accent-color: #7B61FF;
+    }
+    .option-group .range-value {
+      font-size: 11px;
+      color: #999;
+      text-align: right;
+    }
+    .toggle-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 5px 0;
+    }
+    .toggle-row label {
+      font-size: 12px;
+      color: #333;
+    }
+    .toggle {
+      position: relative;
+      width: 36px;
+      height: 20px;
+    }
+    .toggle input {
+      opacity: 0;
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      cursor: pointer;
+      z-index: 1;
+    }
+    .toggle .slider {
+      position: absolute;
+      cursor: pointer;
+      inset: 0;
+      background: #ccc;
+      border-radius: 20px;
+      transition: 0.2s;
+    }
+    .toggle .slider::before {
+      content: "";
+      position: absolute;
+      width: 16px;
+      height: 16px;
+      left: 2px;
+      bottom: 2px;
+      background: #fff;
+      border-radius: 50%;
+      transition: 0.2s;
+    }
+    .toggle input:checked + .slider {
+      background: #7B61FF;
+    }
+    .toggle input:checked + .slider::before {
+      transform: translateX(16px);
+    }
+    .btn {
+      width: 100%;
+      padding: 10px;
+      border: none;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s;
+      margin-bottom: 4px;
+    }
+    .btn-primary {
+      background: #7B61FF;
+      color: #fff;
+    }
+    .btn-primary:hover {
+      background: #6a50e6;
+    }
+    .btn-primary:disabled {
+      background: #d4d4d4;
+      color: #999;
+      cursor: not-allowed;
+    }
+    .btn-outline {
+      background: #fff;
+      color: #7B61FF;
+      border: 1.5px solid #7B61FF;
+    }
+    .btn-outline:hover {
+      background: #F0EDFF;
+    }
+    .btn-danger {
+      background: #fff;
+      color: #FF4444;
+      border: 1.5px solid #FF4444;
+    }
+    .btn-danger:hover {
+      background: #FFF0F0;
+    }
+    .btn-secondary {
+      background: transparent;
+      color: #666;
+    }
+    .btn-secondary:hover {
+      background: #f5f5f5;
+    }
+    .hint {
+      font-size: 11px;
+      color: #aaa;
+      text-align: center;
+      margin-top: 2px;
+      margin-bottom: 4px;
+    }
+    .btn-row {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 4px;
+    }
+    .btn-row .btn {
+      flex: 1;
+      margin-bottom: 0;
+    }
+    .divider {
+      height: 1px;
+      background: #eee;
+      margin: 10px 0;
+    }
+    .frame-section-row {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+    }
+    .frame-section-row .frame-list {
+      flex: 1;
+    }
+    .swap-btn {
+      width: 28px;
+      height: 28px;
+      border: 1.5px solid #ddd;
+      border-radius: 6px;
+      background: #fff;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      transition: all 0.12s;
+      color: #888;
+      font-size: 14px;
+    }
+    .swap-btn:hover {
+      border-color: #7B61FF;
+      color: #7B61FF;
+      background: #F0EDFF;
+    }
+    .swap-btn svg {
+      width: 16px;
+      height: 16px;
+    }
+    .label-input {
+      width: 100%;
+      height: 32px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      padding: 0 8px;
+      font-size: 12px;
+      font-family: 'Inter', -apple-system, sans-serif;
+      background: #fff;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    .label-input:focus {
+      border-color: #7B61FF;
+    }
+    .label-input::placeholder {
+      color: #bbb;
+    }
+
+    /* ---- Point Picker ---- */
+    .picker-row {
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+    }
+    .picker-col {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+    }
+    .picker-col-label {
+      font-size: 11px;
+      font-weight: 600;
+      color: #666;
+    }
+    .point-picker {
+      position: relative;
+      width: 72px;
+      height: 52px;
+    }
+    .point-picker .pp-rect {
+      position: absolute;
+      top: 8px;
+      left: 12px;
+      width: 48px;
+      height: 36px;
+      border: 1.5px solid #ccc;
+      border-radius: 4px;
+      background: #fafafa;
+    }
+    .point-picker .pp-dot {
+      position: absolute;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      border: 1.5px solid #bbb;
+      background: #fff;
+      cursor: pointer;
+      transform: translate(-50%, -50%);
+      transition: all 0.12s;
+      z-index: 2;
+    }
+    .point-picker .pp-dot:hover {
+      border-color: #7B61FF;
+      background: #F0EDFF;
+      transform: translate(-50%, -50%) scale(1.25);
+    }
+    .point-picker .pp-dot.active {
+      background: #7B61FF;
+      border-color: #7B61FF;
+      box-shadow: 0 0 0 2px rgba(123,97,255,0.25);
+    }
+    .point-picker .pp-dot.active:hover {
+      background: #6a50e6;
+    }
+    .pp-auto-btn {
+      font-size: 10px;
+      font-weight: 600;
+      color: #999;
+      background: #f0f0f0;
+      border: 1.5px solid transparent;
+      border-radius: 4px;
+      padding: 2px 10px;
+      cursor: pointer;
+      transition: all 0.12s;
+    }
+    .pp-auto-btn:hover {
+      color: #7B61FF;
+      background: #F0EDFF;
+    }
+    .pp-auto-btn.active {
+      color: #fff;
+      background: #7B61FF;
+      border-color: #7B61FF;
+    }
+  </style>
+</head>
+<body>
+  <h2>Arrow Connector</h2>
+
+  <!-- 新規作成モード -->
+  <div id="createMode">
+    <div class="section">
+      <div class="section-label">選択中のフレーム</div>
+      <div class="frame-section-row">
+        <div class="frame-list" id="frameList">
+          <div class="empty-state">2つのフレームを選択してください</div>
+        </div>
+        <button class="swap-btn" id="swapBtn" title="始点と終点を入れ替え">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 2 L4 14 M4 14 L7 11 M4 14 L1 11"/>
+            <path d="M12 14 L12 2 M12 2 L9 5 M12 2 L15 5"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-label">接続位置</div>
+      <div class="picker-row">
+        <div class="picker-col">
+          <div class="picker-col-label" style="color:#7B61FF;">始点</div>
+          <div class="point-picker" id="startPicker"></div>
+          <button class="pp-auto-btn active" id="startAutoBtn">AUTO</button>
+        </div>
+        <div class="picker-col">
+          <div class="picker-col-label" style="color:#FF6B6B;">終点</div>
+          <div class="point-picker" id="endPicker"></div>
+          <button class="pp-auto-btn active" id="endAutoBtn">AUTO</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-label">スタイル設定</div>
+      <div class="options-grid">
+        <div class="option-group">
+          <label>カラー</label>
+          <input type="color" id="colorPicker" value="#333333" />
+        </div>
+        <div class="option-group">
+          <label>線の太さ <span class="range-value" id="weightValue">2px</span></label>
+          <input type="range" id="strokeWeight" min="1" max="8" value="2" />
+        </div>
+        <div class="option-group">
+          <label>矢じりサイズ <span class="range-value" id="arrowValue">12</span></label>
+          <input type="range" id="arrowSize" min="6" max="24" value="12" />
+        </div>
+      </div>
+      <div style="margin-top: 8px;">
+        <div class="toggle-row">
+          <label>カーブ</label>
+          <div class="toggle">
+            <input type="checkbox" id="curved" checked />
+            <span class="slider"></span>
+          </div>
+        </div>
+        <div class="toggle-row">
+          <label>破線</label>
+          <div class="toggle">
+            <input type="checkbox" id="dashed" />
+            <span class="slider"></span>
+          </div>
+        </div>
+      </div>
+      <div style="margin-top: 8px;">
+        <div class="option-group">
+          <label>ラベル</label>
+          <input type="text" class="label-input" id="labelInput" placeholder="テキストを入力..." />
+        </div>
+      </div>
+    </div>
+
+    <button class="btn btn-primary" id="connectBtn" disabled>矢印で接続</button>
+    <div class="hint" id="hint">2つのフレームを選択すると接続できます</div>
+
+    <div class="divider"></div>
+    <button class="btn btn-outline" id="refreshAllBtn">全矢印の位置を更新</button>
+    <button class="btn btn-secondary" id="cancelBtn">閉じる</button>
+  </div>
+
+  <!-- 編集モード -->
+  <div id="editMode" style="display:none;">
+    <div class="mode-label">編集モード</div>
+
+    <div class="section">
+      <div class="section-label">接続中のフレーム</div>
+      <div class="frame-section-row">
+        <div class="frame-list" id="editFrameList"></div>
+        <button class="swap-btn" id="editSwapBtn" title="始点と終点を入れ替え">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 2 L4 14 M4 14 L7 11 M4 14 L1 11"/>
+            <path d="M12 14 L12 2 M12 2 L9 5 M12 2 L15 5"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-label">接続位置</div>
+      <div class="picker-row">
+        <div class="picker-col">
+          <div class="picker-col-label" style="color:#7B61FF;">始点</div>
+          <div class="point-picker" id="editStartPicker"></div>
+          <button class="pp-auto-btn active" id="editStartAutoBtn">AUTO</button>
+        </div>
+        <div class="picker-col">
+          <div class="picker-col-label" style="color:#FF6B6B;">終点</div>
+          <div class="point-picker" id="editEndPicker"></div>
+          <button class="pp-auto-btn active" id="editEndAutoBtn">AUTO</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-label">スタイル設定</div>
+      <div class="options-grid">
+        <div class="option-group">
+          <label>カラー</label>
+          <input type="color" id="editColorPicker" value="#333333" />
+        </div>
+        <div class="option-group">
+          <label>線の太さ <span class="range-value" id="editWeightValue">2px</span></label>
+          <input type="range" id="editStrokeWeight" min="1" max="8" value="2" />
+        </div>
+        <div class="option-group">
+          <label>矢じりサイズ <span class="range-value" id="editArrowValue">12</span></label>
+          <input type="range" id="editArrowSize" min="6" max="24" value="12" />
+        </div>
+      </div>
+      <div style="margin-top: 8px;">
+        <div class="toggle-row">
+          <label>カーブ</label>
+          <div class="toggle">
+            <input type="checkbox" id="editCurved" checked />
+            <span class="slider"></span>
+          </div>
+        </div>
+        <div class="toggle-row">
+          <label>破線</label>
+          <div class="toggle">
+            <input type="checkbox" id="editDashed" />
+            <span class="slider"></span>
+          </div>
+        </div>
+      </div>
+      <div style="margin-top: 8px;">
+        <div class="option-group">
+          <label>ラベル</label>
+          <input type="text" class="label-input" id="editLabelInput" placeholder="テキストを入力..." />
+        </div>
+      </div>
+    </div>
+
+    <button class="btn btn-primary" id="updateBtn">スタイルを更新</button>
+    <div class="btn-row">
+      <button class="btn btn-outline" id="refreshBtn">位置を更新</button>
+      <button class="btn btn-danger" id="deleteBtn">削除</button>
+    </div>
+    <button class="btn btn-secondary" id="editCancelBtn">閉じる</button>
+  </div>
+
+  <script>
+    // ---- Point Picker Component ----
+    // 9 positions: 4 corners + 4 edge midpoints + auto
+    const POSITIONS = {
+      'top-left':     { left: 12, top: 8 },
+      'top':          { left: 36, top: 8 },
+      'top-right':    { left: 60, top: 8 },
+      'left':         { left: 12, top: 26 },
+      'right':        { left: 60, top: 26 },
+      'bottom-left':  { left: 12, top: 44 },
+      'bottom':       { left: 36, top: 44 },
+      'bottom-right': { left: 60, top: 44 },
+    };
+
+    function createPointPicker(containerId, autoBtnId, accentColor) {
+      const container = document.getElementById(containerId);
+      const autoBtn = document.getElementById(autoBtnId);
+
+      // Draw the rectangle
+      const rect = document.createElement('div');
+      rect.className = 'pp-rect';
+      container.appendChild(rect);
+
+      let selectedValue = 'auto';
+      const dots = {};
+
+      // Create dots
+      for (const [pos, coords] of Object.entries(POSITIONS)) {
+        const dot = document.createElement('div');
+        dot.className = 'pp-dot';
+        dot.style.left = coords.left + 'px';
+        dot.style.top = coords.top + 'px';
+        dot.title = pos;
+        dot.addEventListener('click', () => {
+          selectedValue = pos;
+          updateVisuals();
+        });
+        container.appendChild(dot);
+        dots[pos] = dot;
+      }
+
+      autoBtn.addEventListener('click', () => {
+        selectedValue = 'auto';
+        updateVisuals();
+      });
+
+      function updateVisuals() {
+        // Clear all
+        for (const d of Object.values(dots)) {
+          d.classList.remove('active');
+          d.style.borderColor = '';
+          d.style.background = '';
+          d.style.boxShadow = '';
+        }
+        autoBtn.classList.remove('active');
+        autoBtn.style.background = '';
+        autoBtn.style.borderColor = '';
+        autoBtn.style.color = '';
+
+        if (selectedValue === 'auto') {
+          autoBtn.classList.add('active');
+          autoBtn.style.background = accentColor;
+          autoBtn.style.borderColor = accentColor;
+          autoBtn.style.color = '#fff';
+        } else {
+          const activeDot = dots[selectedValue];
+          if (activeDot) {
+            activeDot.classList.add('active');
+            activeDot.style.background = accentColor;
+            activeDot.style.borderColor = accentColor;
+            activeDot.style.boxShadow = '0 0 0 2px ' + accentColor + '40';
+          }
+        }
+      }
+
+      function getValue() {
+        return selectedValue;
+      }
+
+      function setValue(val) {
+        selectedValue = val || 'auto';
+        updateVisuals();
+      }
+
+      updateVisuals();
+      return { getValue, setValue };
+    }
+
+    // Initialize 4 pickers
+    const startPicker = createPointPicker('startPicker', 'startAutoBtn', '#7B61FF');
+    const endPicker = createPointPicker('endPicker', 'endAutoBtn', '#FF6B6B');
+    const editStartPicker = createPointPicker('editStartPicker', 'editStartAutoBtn', '#7B61FF');
+    const editEndPicker = createPointPicker('editEndPicker', 'editEndAutoBtn', '#FF6B6B');
+
+    // ---- Main Logic ----
+    let frames = [];
+    let currentArrowId = null;
+
+    const createMode = document.getElementById('createMode');
+    const editMode = document.getElementById('editMode');
+
+    const frameList = document.getElementById('frameList');
+    const connectBtn = document.getElementById('connectBtn');
+    const hint = document.getElementById('hint');
+    const strokeWeight = document.getElementById('strokeWeight');
+    const weightValue = document.getElementById('weightValue');
+    const arrowSizeInput = document.getElementById('arrowSize');
+    const arrowValue = document.getElementById('arrowValue');
+
+    const editFrameList = document.getElementById('editFrameList');
+    const editStrokeWeight = document.getElementById('editStrokeWeight');
+    const editWeightValue = document.getElementById('editWeightValue');
+    const editArrowSizeInput = document.getElementById('editArrowSize');
+    const editArrowValue = document.getElementById('editArrowValue');
+
+    strokeWeight.addEventListener('input', () => {
+      weightValue.textContent = strokeWeight.value + 'px';
+    });
+    arrowSizeInput.addEventListener('input', () => {
+      arrowValue.textContent = arrowSizeInput.value;
+    });
+    editStrokeWeight.addEventListener('input', () => {
+      editWeightValue.textContent = editStrokeWeight.value + 'px';
+    });
+    editArrowSizeInput.addEventListener('input', () => {
+      editArrowValue.textContent = editArrowSizeInput.value;
+    });
+
+    window.onmessage = (event) => {
+      const msg = event.data.pluginMessage;
+
+      if (msg.type === 'selection-update') {
+        frames = msg.frames;
+        currentArrowId = null;
+        createMode.style.display = 'block';
+        editMode.style.display = 'none';
+        updateCreateUI();
+      }
+
+      if (msg.type === 'edit-arrow') {
+        currentArrowId = msg.arrowId;
+        createMode.style.display = 'none';
+        editMode.style.display = 'block';
+
+        editFrameList.innerHTML = `
+          <div class="frame-item">
+            <div class="icon" style="background: ${msg.sourceExists ? '#7B61FF' : '#ccc'}"></div>
+            <span class="name">${msg.sourceName}</span>
+            <span class="badge" style="background: #7B61FF">始点</span>
+          </div>
+          <div class="frame-item">
+            <div class="icon" style="background: ${msg.targetExists ? '#FF6B6B' : '#ccc'}"></div>
+            <span class="name">${msg.targetName}</span>
+            <span class="badge" style="background: #FF6B6B">終点</span>
+          </div>`;
+
+        const opts = msg.options;
+        document.getElementById('editColorPicker').value = opts.color;
+        editStrokeWeight.value = opts.strokeWeight;
+        editWeightValue.textContent = opts.strokeWeight + 'px';
+        editArrowSizeInput.value = opts.arrowSize;
+        editArrowValue.textContent = opts.arrowSize;
+        document.getElementById('editCurved').checked = opts.curved;
+        document.getElementById('editDashed').checked = opts.dashed;
+
+        editStartPicker.setValue(opts.startSide || 'auto');
+        editEndPicker.setValue(opts.endSide || 'auto');
+        document.getElementById('editLabelInput').value = opts.label || '';
+      }
+    };
+
+    function updateCreateUI() {
+      if (frames.length === 0) {
+        frameList.innerHTML = '<div class="empty-state">2つのフレームを選択してください</div>';
+        connectBtn.disabled = true;
+        hint.textContent = '2つのフレームを選択すると接続できます';
+      } else if (frames.length === 1) {
+        frameList.innerHTML = `
+          <div class="frame-item">
+            <div class="icon" style="background: #7B61FF"></div>
+            <span class="name">${frames[0].name}</span>
+            <span class="badge" style="background: #7B61FF">始点</span>
+          </div>`;
+        connectBtn.disabled = true;
+        hint.textContent = 'もう1つフレームを選択してください';
+      } else {
+        frameList.innerHTML = frames.slice(0, 2).map((f, i) =>
+          `<div class="frame-item">
+            <div class="icon" style="background: ${i === 0 ? '#7B61FF' : '#FF6B6B'}"></div>
+            <span class="name">${f.name}</span>
+            <span class="badge" style="background: ${i === 0 ? '#7B61FF' : '#FF6B6B'}">${i === 0 ? '始点' : '終点'}</span>
+          </div>`
+        ).join('');
+        hint.textContent = frames.length > 2 ? '最初の2つのフレームが接続されます' : '';
+        connectBtn.disabled = false;
+      }
+    }
+
+    function getCreateOptions() {
+      return {
+        color: document.getElementById('colorPicker').value,
+        strokeWeight: parseInt(strokeWeight.value),
+        curved: document.getElementById('curved').checked,
+        arrowSize: parseInt(arrowSizeInput.value),
+        dashed: document.getElementById('dashed').checked,
+        startSide: startPicker.getValue(),
+        endSide: endPicker.getValue(),
+        label: document.getElementById('labelInput').value,
+      };
+    }
+
+    function getEditOptions() {
+      return {
+        color: document.getElementById('editColorPicker').value,
+        strokeWeight: parseInt(editStrokeWeight.value),
+        curved: document.getElementById('editCurved').checked,
+        arrowSize: parseInt(editArrowSizeInput.value),
+        dashed: document.getElementById('editDashed').checked,
+        startSide: editStartPicker.getValue(),
+        endSide: editEndPicker.getValue(),
+        label: document.getElementById('editLabelInput').value,
+      };
+    }
+
+    // 始点と終点を入れ替え（新規作成）
+    document.getElementById('swapBtn').addEventListener('click', () => {
+      if (frames.length >= 2) {
+        const tmp = frames[0];
+        frames[0] = frames[1];
+        frames[1] = tmp;
+        // ポイントピッカーも入れ替え
+        const sv = startPicker.getValue();
+        const ev = endPicker.getValue();
+        startPicker.setValue(ev);
+        endPicker.setValue(sv);
+        updateCreateUI();
+      }
+    });
+
+    // 始点と終点を入れ替え（編集）
+    document.getElementById('editSwapBtn').addEventListener('click', () => {
+      if (!currentArrowId) return;
+      // ポイントピッカーも入れ替え
+      const sv = editStartPicker.getValue();
+      const ev = editEndPicker.getValue();
+      editStartPicker.setValue(ev);
+      editEndPicker.setValue(sv);
+      // swap メッセージを送信
+      const opts = getEditOptions();
+      parent.postMessage({ pluginMessage: {
+        type: 'swap-arrow',
+        arrowId: currentArrowId,
+        ...opts,
+      }}, '*');
+    });
+
+    connectBtn.addEventListener('click', () => {
+      if (frames.length < 2) return;
+      const opts = getCreateOptions();
+      parent.postMessage({ pluginMessage: {
+        type: 'connect',
+        sourceId: frames[0].id,
+        targetId: frames[1].id,
+        ...opts,
+      }}, '*');
+    });
+
+    document.getElementById('updateBtn').addEventListener('click', () => {
+      if (!currentArrowId) return;
+      const opts = getEditOptions();
+      parent.postMessage({ pluginMessage: {
+        type: 'update-arrow',
+        arrowId: currentArrowId,
+        ...opts,
+      }}, '*');
+    });
+
+    document.getElementById('refreshBtn').addEventListener('click', () => {
+      if (!currentArrowId) return;
+      const opts = getEditOptions();
+      parent.postMessage({ pluginMessage: {
+        type: 'update-arrow',
+        arrowId: currentArrowId,
+        ...opts,
+      }}, '*');
+    });
+
+    document.getElementById('refreshAllBtn').addEventListener('click', () => {
+      parent.postMessage({ pluginMessage: { type: 'refresh-all' }}, '*');
+    });
+
+    document.getElementById('deleteBtn').addEventListener('click', () => {
+      if (!currentArrowId) return;
+      parent.postMessage({ pluginMessage: {
+        type: 'delete-arrow',
+        arrowId: currentArrowId,
+      }}, '*');
+      currentArrowId = null;
+    });
+
+    document.getElementById('cancelBtn').addEventListener('click', () => {
+      parent.postMessage({ pluginMessage: { type: 'cancel' }}, '*');
+    });
+    document.getElementById('editCancelBtn').addEventListener('click', () => {
+      parent.postMessage({ pluginMessage: { type: 'cancel' }}, '*');
+    });
+  </script>
+</body>
+</html>
