@@ -515,7 +515,7 @@
         <div class="toggle-row">
           <label>カーブ</label>
           <div class="toggle">
-            <input type="checkbox" id="curved" checked />
+            <input type="checkbox" id="curved" />
             <span class="slider"></span>
           </div>
         </div>
@@ -525,6 +525,10 @@
             <input type="checkbox" id="dashed" />
             <span class="slider"></span>
           </div>
+        </div>
+        <div class="option-group" id="bendRow" style="display:flex; margin-top: 6px;">
+          <label>折れ位置 <span class="range-value" id="bendValue">50%</span></label>
+          <input type="range" id="bendPosition" min="5" max="95" value="50" />
         </div>
       </div>
       <div style="margin-top: 8px;">
@@ -619,7 +623,7 @@
         <div class="toggle-row">
           <label>カーブ</label>
           <div class="toggle">
-            <input type="checkbox" id="editCurved" checked />
+            <input type="checkbox" id="editCurved" />
             <span class="slider"></span>
           </div>
         </div>
@@ -629,6 +633,10 @@
             <input type="checkbox" id="editDashed" />
             <span class="slider"></span>
           </div>
+        </div>
+        <div class="option-group" id="editBendRow" style="display:none; margin-top: 6px;">
+          <label>折れ位置 <span class="range-value" id="editBendValue">50%</span></label>
+          <input type="range" id="editBendPosition" min="5" max="95" value="50" />
         </div>
       </div>
       <div style="margin-top: 8px;">
@@ -780,6 +788,34 @@
     const arrowSizeInput = document.getElementById('arrowSize');
     const arrowValue = document.getElementById('arrowValue');
 
+    // 折れ位置スライダー
+    const bendPosition = document.getElementById('bendPosition');
+    const bendValue = document.getElementById('bendValue');
+    const bendRow = document.getElementById('bendRow');
+    const editBendPosition = document.getElementById('editBendPosition');
+    const editBendValue = document.getElementById('editBendValue');
+    const editBendRow = document.getElementById('editBendRow');
+
+    bendPosition.addEventListener('input', () => {
+      bendValue.textContent = bendPosition.value + '%';
+    });
+    editBendPosition.addEventListener('input', () => {
+      editBendValue.textContent = editBendPosition.value + '%';
+    });
+
+    // カーブトグルと折れ位置の連動
+    function updateBendVisibility(curvedCheckbox, row) {
+      row.style.display = curvedCheckbox.checked ? 'none' : 'flex';
+    }
+    document.getElementById('curved').addEventListener('change', function() {
+      updateBendVisibility(this, bendRow);
+    });
+    document.getElementById('editCurved').addEventListener('change', function() {
+      updateBendVisibility(this, editBendRow);
+    });
+    // 初期状態
+    updateBendVisibility(document.getElementById('curved'), bendRow);
+
     const editFrameList = document.getElementById('editFrameList');
     const editStrokeWeight = document.getElementById('editStrokeWeight');
     const editWeightValue = document.getElementById('editWeightValue');
@@ -922,6 +958,11 @@
         else if (opts.startArrow) arrowDirEdit.setValue('start');
         else if (opts.endArrow !== false) arrowDirEdit.setValue('end');
         else arrowDirEdit.setValue('none');
+
+        const bp = Math.round((opts.bendPosition ?? 0.5) * 100);
+        editBendPosition.value = bp;
+        editBendValue.textContent = bp + '%';
+        updateBendVisibility(document.getElementById('editCurved'), editBendRow);
       }
     };
 
@@ -998,6 +1039,7 @@
         startSide: startPicker.getValue(),
         endSide: endPicker.getValue(),
         arrowDirValue: arrowDirCreate.getValue(),
+        bendPosition: parseInt(bendPosition.value),
       };
       try { localStorage.setItem(STORAGE_KEY, JSON.stringify(prefs)); } catch {}
     }
@@ -1028,6 +1070,11 @@
         if (p.startSide !== undefined) startPicker.setValue(p.startSide);
         if (p.endSide !== undefined) endPicker.setValue(p.endSide);
         if (p.arrowDirValue !== undefined) arrowDirCreate.setValue(p.arrowDirValue);
+        if (p.bendPosition !== undefined) {
+          bendPosition.value = p.bendPosition;
+          bendValue.textContent = p.bendPosition + '%';
+        }
+        updateBendVisibility(document.getElementById('curved'), bendRow);
       } catch {}
     }
 
@@ -1046,6 +1093,7 @@
         label: document.getElementById('labelInput').value,
         startArrow: arrows.startArrow,
         endArrow: arrows.endArrow,
+        bendPosition: parseInt(bendPosition.value) / 100,
       };
       savePrefs();
       return opts;
@@ -1053,7 +1101,7 @@
 
     function getEditOptions() {
       const arrows = arrowDirEdit.getArrows();
-      return {
+      const opts = {
         color: document.getElementById('editColorPicker').value,
         strokeWeight: parseInt(editStrokeWeight.value),
         curved: document.getElementById('editCurved').checked,
@@ -1064,7 +1112,25 @@
         label: document.getElementById('editLabelInput').value,
         startArrow: arrows.startArrow,
         endArrow: arrows.endArrow,
+        bendPosition: parseInt(editBendPosition.value) / 100,
       };
+
+      // 編集モードの値を新規作成モードに同期して保存
+      document.getElementById('colorPicker').value = opts.color;
+      colorHex.textContent = opts.color;
+      strokeWeight.value = opts.strokeWeight;
+      weightValue.textContent = opts.strokeWeight + 'px';
+      document.getElementById('curved').checked = opts.curved;
+      arrowSizeInput.value = opts.arrowSize;
+      arrowValue.textContent = opts.arrowSize;
+      document.getElementById('dashed').checked = opts.dashed;
+      bendPosition.value = Math.round(opts.bendPosition * 100);
+      bendValue.textContent = Math.round(opts.bendPosition * 100) + '%';
+      arrowDirCreate.setValue(arrowDirEdit.getValue());
+      updateBendVisibility(document.getElementById('curved'), bendRow);
+      savePrefs();
+
+      return opts;
     }
 
     // 始点と終点を入れ替え（新規作成）

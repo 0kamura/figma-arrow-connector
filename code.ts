@@ -27,6 +27,7 @@ interface ArrowOptions {
   label: string;
   startArrow: boolean;
   endArrow: boolean;
+  bendPosition: number;
 }
 
 interface ArrowData {
@@ -141,29 +142,18 @@ function findConnectionPoints(
   return { start: bestStart, end: bestEnd };
 }
 
-// 直角折れ線の中間点を計算
-function calcElbowPoints(start: EdgeInfo, end: EdgeInfo): Point[] {
+// 直角折れ線の中間点を計算（bendPosition: 0~1 で折れ位置を制御）
+function calcElbowPoints(start: EdgeInfo, end: EdgeInfo, bendPosition: number = 0.5): Point[] {
   const s = start.point;
   const e = end.point;
-  const gap = 20; // フレームから出る最小距離
+  const t = Math.max(0.05, Math.min(0.95, bendPosition));
 
   const isHorizontalStart = start.side === "left" || start.side === "right";
   const isHorizontalEnd = end.side === "left" || end.side === "right";
 
-  // 始点の方向に出るオフセット
-  function outward(edge: EdgeInfo, dist: number): Point {
-    switch (edge.side) {
-      case "top":    return { x: edge.point.x, y: edge.point.y - dist };
-      case "bottom": return { x: edge.point.x, y: edge.point.y + dist };
-      case "left":   return { x: edge.point.x - dist, y: edge.point.y };
-      case "right":  return { x: edge.point.x + dist, y: edge.point.y };
-    }
-  }
-
   // 同方向（水平→水平 or 垂直→垂直）
   if (isHorizontalStart && isHorizontalEnd) {
-    // 両方水平: 中間X座標で折る
-    const midX = (s.x + e.x) / 2;
+    const midX = s.x + (e.x - s.x) * t;
     return [
       { x: midX, y: s.y },
       { x: midX, y: e.y },
@@ -171,8 +161,7 @@ function calcElbowPoints(start: EdgeInfo, end: EdgeInfo): Point[] {
   }
 
   if (!isHorizontalStart && !isHorizontalEnd) {
-    // 両方垂直: 中間Y座標で折る
-    const midY = (s.y + e.y) / 2;
+    const midY = s.y + (e.y - s.y) * t;
     return [
       { x: s.x, y: midY },
       { x: e.x, y: midY },
@@ -181,12 +170,19 @@ function calcElbowPoints(start: EdgeInfo, end: EdgeInfo): Point[] {
 
   // 異方向（水平→垂直 or 垂直→水平）: 1回折りでOK
   if (isHorizontalStart && !isHorizontalEnd) {
-    // 水平スタート、垂直エンド → コーナー点は (e.x, s.y)
-    return [{ x: e.x, y: s.y }];
+    const bendX = s.x + (e.x - s.x) * t;
+    return [
+      { x: bendX, y: s.y },
+      { x: bendX, y: e.y },
+    ];
   }
 
-  // 垂直スタート、水平エンド → コーナー点は (s.x, e.y)
-  return [{ x: s.x, y: e.y }];
+  // 垂直→水平
+  const bendY = s.y + (e.y - s.y) * t;
+  return [
+    { x: s.x, y: bendY },
+    { x: e.x, y: bendY },
+  ];
 }
 
 // ベジェ曲線の制御点を計算（FigJam風のカーブ）
@@ -195,7 +191,7 @@ function calcControlPoints(
   end: EdgeInfo
 ): { cp1: Point; cp2: Point } {
   const dist = distance(start.point, end.point);
-  const offset = Math.min(dist * 0.4, 150);
+  const offset = Math.min(dist * 0.25, 80);
 
   function applyOffset(edge: EdgeInfo, dir: number): Point {
     switch (edge.side) {
@@ -624,7 +620,7 @@ async function drawArrow(
 
   } else {
     // --- 直角折れ線（エルボー）矢印 ---
-    const waypoints = calcElbowPoints(start, end);
+    const waypoints = calcElbowPoints(start, end, options.bendPosition ?? 0.5);
     let allPoints = [start.point, ...waypoints, end.point];
 
     // 矢じり分短くする
@@ -887,7 +883,7 @@ figma.ui.onmessage = async (msg) => {
       return;
     }
 
-    const options: ArrowOptions = { color, strokeWeight, curved, arrowSize, dashed, startSide: startSide || "auto", endSide: endSide || "auto", label: label || "", startArrow: msg.startArrow !== undefined ? msg.startArrow : false, endArrow: msg.endArrow !== undefined ? msg.endArrow : true };
+    const options: ArrowOptions = { color, strokeWeight, curved, arrowSize, dashed, startSide: startSide || "auto", endSide: endSide || "auto", label: label || "", startArrow: msg.startArrow !== undefined ? msg.startArrow : false, endArrow: msg.endArrow !== undefined ? msg.endArrow : true, bendPosition: msg.bendPosition ?? 0.5 };
     const arrow = await drawArrow(source, target, options);
 
     figma.currentPage.selection = [arrow];
@@ -919,7 +915,7 @@ figma.ui.onmessage = async (msg) => {
       return;
     }
 
-    const options: ArrowOptions = { color, strokeWeight, curved, arrowSize, dashed, startSide: startSide || "auto", endSide: endSide || "auto", label: label || "", startArrow: msg.startArrow !== undefined ? msg.startArrow : false, endArrow: msg.endArrow !== undefined ? msg.endArrow : true };
+    const options: ArrowOptions = { color, strokeWeight, curved, arrowSize, dashed, startSide: startSide || "auto", endSide: endSide || "auto", label: label || "", startArrow: msg.startArrow !== undefined ? msg.startArrow : false, endArrow: msg.endArrow !== undefined ? msg.endArrow : true, bendPosition: msg.bendPosition ?? 0.5 };
     const newArrow = await drawArrow(source, target, options, arrowGroup);
 
     figma.currentPage.selection = [newArrow];
@@ -997,7 +993,7 @@ figma.ui.onmessage = async (msg) => {
       return;
     }
 
-    const options: ArrowOptions = { color, strokeWeight, curved, arrowSize, dashed, startSide: startSide || "auto", endSide: endSide || "auto", label: label || "", startArrow: msg.startArrow !== undefined ? msg.startArrow : false, endArrow: msg.endArrow !== undefined ? msg.endArrow : true };
+    const options: ArrowOptions = { color, strokeWeight, curved, arrowSize, dashed, startSide: startSide || "auto", endSide: endSide || "auto", label: label || "", startArrow: msg.startArrow !== undefined ? msg.startArrow : false, endArrow: msg.endArrow !== undefined ? msg.endArrow : true, bendPosition: msg.bendPosition ?? 0.5 };
     const newArrow = await drawArrow(source, target, options, arrowGroup);
 
     figma.currentPage.selection = [newArrow];
