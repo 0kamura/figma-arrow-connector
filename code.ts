@@ -336,8 +336,120 @@ function getPathMidpoint(points: Point[]): Point {
   return points[Math.floor(points.length / 2)];
 }
 
+// ベジェ曲線をt値で分割（De Casteljau）
+function splitBezier(
+  p0: Point, p1: Point, p2: Point, p3: Point, t: number
+): { first: [Point, Point, Point, Point]; second: [Point, Point, Point, Point] } {
+  const lerp = (a: Point, b: Point, t: number): Point => ({
+    x: a.x + (b.x - a.x) * t,
+    y: a.y + (b.y - a.y) * t,
+  });
+  const a = lerp(p0, p1, t);
+  const b = lerp(p1, p2, t);
+  const c = lerp(p2, p3, t);
+  const d = lerp(a, b, t);
+  const e = lerp(b, c, t);
+  const f = lerp(d, e, t);
+  return {
+    first: [p0, a, d, f],
+    second: [f, e, c, p3],
+  };
+}
+
+// ベジェ曲線上のtを、中間点からの距離で求める（二分探索）
+function findBezierT(
+  p0: Point, p1: Point, p2: Point, p3: Point, midT: number, halfGap: number, direction: -1 | 1
+): number {
+  let lo = direction === -1 ? 0 : midT;
+  let hi = direction === -1 ? midT : 1;
+  const midPt = bezierPointAndTangent(p0, p1, p2, p3, midT).point;
+
+  for (let i = 0; i < 20; i++) {
+    const t = (lo + hi) / 2;
+    const pt = bezierPointAndTangent(p0, p1, p2, p3, t).point;
+    const d = distance(midPt, pt);
+    if (d < halfGap) {
+      if (direction === -1) hi = t; else lo = t;
+    } else {
+      if (direction === -1) lo = t; else hi = t;
+    }
+  }
+  return (lo + hi) / 2;
+}
+
+// 折れ線のパスにギャップを作る
+function splitPolylineAtGap(
+  points: Point[], gapCenter: Point, halfGap: number
+): { before: Point[]; after: Point[] } {
+  // パス上の累積距離を計算
+  const dists: number[] = [0];
+  for (let i = 1; i < points.length; i++) {
+    dists.push(dists[i - 1] + distance(points[i - 1], points[i]));
+  }
+  const totalLen = dists[dists.length - 1];
+
+  // ギャップ中心のパス上の位置を求める
+  let centerDist = totalLen / 2; // fallback
+  // gapCenterに最も近いパス上の点を見つける
+  let minD = Infinity;
+  for (let i = 1; i < points.length; i++) {
+    const segLen = distance(points[i - 1], points[i]);
+    if (segLen === 0) continue;
+    // 線分上の最近点
+    const dx = points[i].x - points[i - 1].x;
+    const dy = points[i].y - points[i - 1].y;
+    let t = ((gapCenter.x - points[i - 1].x) * dx + (gapCenter.y - points[i - 1].y) * dy) / (segLen * segLen);
+    t = Math.max(0, Math.min(1, t));
+    const proj = { x: points[i - 1].x + dx * t, y: points[i - 1].y + dy * t };
+    const d = distance(gapCenter, proj);
+    if (d < minD) {
+      minD = d;
+      centerDist = dists[i - 1] + segLen * t;
+    }
+  }
+
+  const gapStart = Math.max(0, centerDist - halfGap);
+  const gapEnd = Math.min(totalLen, centerDist + halfGap);
+
+  function pointAtDist(targetDist: number): Point {
+    for (let i = 1; i < points.length; i++) {
+      if (dists[i] >= targetDist) {
+        const segLen = dists[i] - dists[i - 1];
+        const t = segLen > 0 ? (targetDist - dists[i - 1]) / segLen : 0;
+        return {
+          x: points[i - 1].x + (points[i].x - points[i - 1].x) * t,
+          y: points[i - 1].y + (points[i].y - points[i - 1].y) * t,
+        };
+      }
+    }
+    return points[points.length - 1];
+  }
+
+  // before: start → gapStart
+  const before: Point[] = [points[0]];
+  for (let i = 1; i < points.length; i++) {
+    if (dists[i] <= gapStart) {
+      before.push(points[i]);
+    } else {
+      before.push(pointAtDist(gapStart));
+      break;
+    }
+  }
+
+  // after: gapEnd → end
+  const afterStart = pointAtDist(gapEnd);
+  const after: Point[] = [afterStart];
+  for (let i = 1; i < points.length; i++) {
+    if (dists[i] > gapEnd) {
+      after.push(points[i]);
+    }
+  }
+
+  return { before, after };
+}
+
 // ラベルテキストを作成
-async function createLabel(pos: Point, text: string, color: RGB, strokeWeight: number): Promise<SceneNode[]> {
+async function createLabel(pos: Point, text: string, color: RGB, strokeWeight: number): Promise<SceneNode> {
   const label = figma.createText();
   await figma.loadFontAsync({ family: "Inter", style: "Medium" });
   label.fontName = { family: "Inter", style: "Medium" };
@@ -347,23 +459,10 @@ async function createLabel(pos: Point, text: string, color: RGB, strokeWeight: n
   label.textAlignHorizontal = "CENTER";
   label.textAlignVertical = "CENTER";
 
-  // テキストの中心を中間点に合わせる
   label.x = pos.x - label.width / 2;
   label.y = pos.y - label.height / 2;
 
-  // 背景矩形（線を隠す） - ページの背景色を使用
-  const padding = 4;
-  const bg = figma.createRectangle();
-  bg.x = label.x - padding;
-  bg.y = label.y - padding;
-  bg.resize(label.width + padding * 2, label.height + padding * 2);
-  const pageBg = figma.currentPage.backgrounds[0];
-  const bgColor = (pageBg && pageBg.type === "SOLID") ? pageBg.color : { r: 1, g: 1, b: 1 };
-  bg.fills = [{ type: "SOLID", color: bgColor }];
-  bg.strokes = [];
-  bg.cornerRadius = 3;
-
-  return [bg, label];
+  return label;
 }
 
 // 矢印を描画（新規作成 or 既存グループを再描画）
@@ -378,103 +477,100 @@ async function drawArrow(
 
   const children: SceneNode[] = [];
 
+  // ベクターにスタイルを適用
+  function styleVector(vec: VectorNode): void {
+    vec.strokes = [{ type: "SOLID", color }];
+    vec.strokeWeight = options.strokeWeight;
+    vec.fills = [];
+    vec.strokeCap = "ROUND";
+    vec.strokeJoin = "ROUND";
+    if (options.dashed) {
+      vec.dashPattern = [8, 6];
+    }
+  }
+
+  // 点群からベクターを作成（位置・サイズ設定→パス設定の順）
+  function createLineVector(points: Point[], pathDataFn: (sx: number, sy: number) => string): VectorNode {
+    const xs = points.map(p => p.x);
+    const ys = points.map(p => p.y);
+    const sx = Math.min(...xs) - 20;
+    const sy = Math.min(...ys) - 20;
+    const w = Math.max(...xs) - sx + 40;
+    const h = Math.max(...ys) - sy + 40;
+
+    const vec = figma.createVector();
+    vec.x = sx;
+    vec.y = sy;
+    vec.resize(Math.max(w, 1), Math.max(h, 1));
+    vec.vectorPaths = [{ windingRule: "NONZERO", data: pathDataFn(sx, sy) }];
+    styleVector(vec);
+    return vec;
+  }
+
   if (options.curved) {
     const { cp1, cp2 } = calcControlPoints(start, end);
+    const p0 = start.point, p1 = cp1, p2 = cp2, p3 = end.point;
 
-    const line = figma.createVector();
-    const sx = Math.min(start.point.x, end.point.x, cp1.x, cp2.x) - 20;
-    const sy = Math.min(start.point.y, end.point.y, cp1.y, cp2.y) - 20;
-
-    const rStart = { x: start.point.x - sx, y: start.point.y - sy };
-    const rEnd = { x: end.point.x - sx, y: end.point.y - sy };
-    const rCp1 = { x: cp1.x - sx, y: cp1.y - sy };
-    const rCp2 = { x: cp2.x - sx, y: cp2.y - sy };
-
-    const w =
-      Math.max(start.point.x, end.point.x, cp1.x, cp2.x) - sx + 40;
-    const h =
-      Math.max(start.point.y, end.point.y, cp1.y, cp2.y) - sy + 40;
-
-    line.x = sx;
-    line.y = sy;
-    line.resize(w, h);
-
-    const pathData = `M ${rStart.x} ${rStart.y} C ${rCp1.x} ${rCp1.y} ${rCp2.x} ${rCp2.y} ${rEnd.x} ${rEnd.y}`;
-    line.vectorPaths = [{ windingRule: "NONZERO", data: pathData }];
-    line.strokes = [{ type: "SOLID", color }];
-    line.strokeWeight = options.strokeWeight;
-    line.fills = [];
-    line.strokeCap = "ROUND";
-    line.strokeJoin = "ROUND";
-    if (options.dashed) {
-      line.dashPattern = [8, 6];
-    }
-    children.push(line);
-
-    // ラベル（線の上、矢じりの下）
     if (options.label) {
-      const mid = bezierPointAndTangent(start.point, cp1, cp2, end.point, 0.5);
-      const labelNodes = await createLabel(mid.point, options.label, color, options.strokeWeight);
-      children.push(...labelNodes);
+      const mid = bezierPointAndTangent(p0, p1, p2, p3, 0.5);
+      const labelNode = await createLabel(mid.point, options.label, color, options.strokeWeight);
+      const halfGap = Math.max(labelNode.width, labelNode.height) / 2 + 6;
+
+      const t1 = findBezierT(p0, p1, p2, p3, 0.5, halfGap, -1);
+      const t2 = findBezierT(p0, p1, p2, p3, 0.5, halfGap, 1);
+
+      const seg1 = splitBezier(p0, p1, p2, p3, t1).first;
+      const seg2 = splitBezier(p0, p1, p2, p3, t2).second;
+
+      children.push(createLineVector([...seg1], (sx, sy) => {
+        const r = seg1.map(p => ({ x: p.x - sx, y: p.y - sy }));
+        return `M ${r[0].x} ${r[0].y} C ${r[1].x} ${r[1].y} ${r[2].x} ${r[2].y} ${r[3].x} ${r[3].y}`;
+      }));
+      children.push(labelNode);
+      children.push(createLineVector([...seg2], (sx, sy) => {
+        const r = seg2.map(p => ({ x: p.x - sx, y: p.y - sy }));
+        return `M ${r[0].x} ${r[0].y} C ${r[1].x} ${r[1].y} ${r[2].x} ${r[2].y} ${r[3].x} ${r[3].y}`;
+      }));
+    } else {
+      children.push(createLineVector([p0, p1, p2, p3], (sx, sy) => {
+        const r = [p0, p1, p2, p3].map(p => ({ x: p.x - sx, y: p.y - sy }));
+        return `M ${r[0].x} ${r[0].y} C ${r[1].x} ${r[1].y} ${r[2].x} ${r[2].y} ${r[3].x} ${r[3].y}`;
+      }));
     }
 
-    const { angle } = bezierPointAndTangent(
-      start.point,
-      cp1,
-      cp2,
-      end.point,
-      1
-    );
+    const { angle } = bezierPointAndTangent(p0, p1, p2, p3, 1);
     children.push(createArrowhead(end.point, angle, options.arrowSize, color));
+
   } else {
     // --- 直角折れ線（エルボー）矢印 ---
     const waypoints = calcElbowPoints(start, end);
     const allPoints = [start.point, ...waypoints, end.point];
 
-    // バウンディングボックス計算
-    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-    for (const p of allPoints) {
-      if (p.x < minX) minX = p.x;
-      if (p.y < minY) minY = p.y;
-      if (p.x > maxX) maxX = p.x;
-      if (p.y > maxY) maxY = p.y;
-    }
-    const sx = minX - 20;
-    const sy = minY - 20;
-    const w = maxX - sx + 40;
-    const h = maxY - sy + 40;
-
-    const line = figma.createVector();
-    line.x = sx;
-    line.y = sy;
-    line.resize(Math.max(w, 1), Math.max(h, 1));
-
-    // パス生成
-    const rPoints = allPoints.map(p => ({ x: p.x - sx, y: p.y - sy }));
-    let pathData = `M ${rPoints[0].x} ${rPoints[0].y}`;
-    for (let i = 1; i < rPoints.length; i++) {
-      pathData += ` L ${rPoints[i].x} ${rPoints[i].y}`;
+    function polyPath(pts: Point[], sx: number, sy: number): string {
+      const r = pts.map(p => ({ x: p.x - sx, y: p.y - sy }));
+      let d = `M ${r[0].x} ${r[0].y}`;
+      for (let i = 1; i < r.length; i++) d += ` L ${r[i].x} ${r[i].y}`;
+      return d;
     }
 
-    line.vectorPaths = [{ windingRule: "NONZERO", data: pathData }];
-    line.strokes = [{ type: "SOLID", color }];
-    line.strokeWeight = options.strokeWeight;
-    line.fills = [];
-    line.strokeCap = "ROUND";
-    line.strokeJoin = "ROUND";
-    if (options.dashed) {
-      line.dashPattern = [8, 6];
-    }
-    children.push(line);
-
-    // ラベル（線の上、矢じりの下）
     if (options.label) {
       const midPt = getPathMidpoint(allPoints);
-      const labelNodes = await createLabel(midPt, options.label, color, options.strokeWeight);
-      children.push(...labelNodes);
+      const labelNode = await createLabel(midPt, options.label, color, options.strokeWeight);
+      const halfGap = Math.max(labelNode.width, labelNode.height) / 2 + 6;
+
+      const { before, after } = splitPolylineAtGap(allPoints, midPt, halfGap);
+
+      if (before.length >= 2) {
+        children.push(createLineVector(before, (sx, sy) => polyPath(before, sx, sy)));
+      }
+      children.push(labelNode);
+      if (after.length >= 2) {
+        children.push(createLineVector(after, (sx, sy) => polyPath(after, sx, sy)));
+      }
+    } else {
+      children.push(createLineVector(allPoints, (sx, sy) => polyPath(allPoints, sx, sy)));
     }
 
-    // 矢じりの角度は最後のセグメントから算出
     const prevPt = allPoints[allPoints.length - 2];
     const endPt = allPoints[allPoints.length - 1];
     const angle = Math.atan2(endPt.y - prevPt.y, endPt.x - prevPt.x);
