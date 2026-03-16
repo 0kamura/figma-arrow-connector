@@ -322,6 +322,40 @@
       font-size: 10px;
       color: #ccc;
     }
+    .arrow-dir {
+      display: flex;
+      gap: 4px;
+    }
+    .arrow-dir-btn {
+      flex: 1;
+      height: 30px;
+      border: 1.5px solid #ddd;
+      border-radius: 6px;
+      background: #fff;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.12s;
+      padding: 0;
+    }
+    .arrow-dir-btn:hover {
+      border-color: #7B61FF;
+    }
+    .arrow-dir-btn.active {
+      border-color: #7B61FF;
+      background: #F0EDFF;
+    }
+    .arrow-dir-btn svg {
+      width: 24px;
+      height: 12px;
+      stroke: #666;
+      fill: #666;
+    }
+    .arrow-dir-btn.active svg {
+      stroke: #7B61FF;
+      fill: #7B61FF;
+    }
     .label-input {
       width: 100%;
       height: 32px;
@@ -495,6 +529,25 @@
       </div>
       <div style="margin-top: 8px;">
         <div class="option-group">
+          <label>矢じり方向</label>
+          <div class="arrow-dir" id="arrowDir">
+            <button class="arrow-dir-btn" data-value="none" title="矢じりなし">
+              <svg viewBox="0 0 24 12" fill="none"><line x1="2" y1="6" x2="22" y2="6" stroke-width="1.5" stroke-linecap="round"/></svg>
+            </button>
+            <button class="arrow-dir-btn active" data-value="end" title="終点のみ">
+              <svg viewBox="0 0 24 12"><line x1="2" y1="6" x2="18" y2="6" stroke-width="1.5" stroke-linecap="round" fill="none"/><polygon points="22,6 16,2 16,10" stroke="none"/></svg>
+            </button>
+            <button class="arrow-dir-btn" data-value="start" title="始点のみ">
+              <svg viewBox="0 0 24 12"><line x1="6" y1="6" x2="22" y2="6" stroke-width="1.5" stroke-linecap="round" fill="none"/><polygon points="2,6 8,2 8,10" stroke="none"/></svg>
+            </button>
+            <button class="arrow-dir-btn" data-value="both" title="両方">
+              <svg viewBox="0 0 24 12"><line x1="6" y1="6" x2="18" y2="6" stroke-width="1.5" stroke-linecap="round" fill="none"/><polygon points="22,6 16,2 16,10" stroke="none"/><polygon points="2,6 8,2 8,10" stroke="none"/></svg>
+            </button>
+          </div>
+        </div>
+      </div>
+      <div style="margin-top: 8px;">
+        <div class="option-group">
           <label>ラベル</label>
           <input type="text" class="label-input" id="labelInput" placeholder="テキストを入力..." />
         </div>
@@ -580,6 +633,25 @@
       </div>
       <div style="margin-top: 8px;">
         <div class="option-group">
+          <label>矢じり方向</label>
+          <div class="arrow-dir" id="editArrowDir">
+            <button class="arrow-dir-btn" data-value="none" title="矢じりなし">
+              <svg viewBox="0 0 24 12" fill="none"><line x1="2" y1="6" x2="22" y2="6" stroke-width="1.5" stroke-linecap="round"/></svg>
+            </button>
+            <button class="arrow-dir-btn active" data-value="end" title="終点のみ">
+              <svg viewBox="0 0 24 12"><line x1="2" y1="6" x2="18" y2="6" stroke-width="1.5" stroke-linecap="round" fill="none"/><polygon points="22,6 16,2 16,10" stroke="none"/></svg>
+            </button>
+            <button class="arrow-dir-btn" data-value="start" title="始点のみ">
+              <svg viewBox="0 0 24 12"><line x1="6" y1="6" x2="22" y2="6" stroke-width="1.5" stroke-linecap="round" fill="none"/><polygon points="2,6 8,2 8,10" stroke="none"/></svg>
+            </button>
+            <button class="arrow-dir-btn" data-value="both" title="両方">
+              <svg viewBox="0 0 24 12"><line x1="6" y1="6" x2="18" y2="6" stroke-width="1.5" stroke-linecap="round" fill="none"/><polygon points="22,6 16,2 16,10" stroke="none"/><polygon points="2,6 8,2 8,10" stroke="none"/></svg>
+            </button>
+          </div>
+        </div>
+      </div>
+      <div style="margin-top: 8px;">
+        <div class="option-group">
           <label>ラベル</label>
           <input type="text" class="label-input" id="editLabelInput" placeholder="テキストを入力..." />
         </div>
@@ -612,15 +684,14 @@
       const container = document.getElementById(containerId);
       const autoBtn = document.getElementById(autoBtnId);
 
-      // Draw the rectangle
       const rect = document.createElement('div');
       rect.className = 'pp-rect';
       container.appendChild(rect);
 
       let selectedValue = 'auto';
+      let onChangeCb = null;
       const dots = {};
 
-      // Create dots
       for (const [pos, coords] of Object.entries(POSITIONS)) {
         const dot = document.createElement('div');
         dot.className = 'pp-dot';
@@ -630,6 +701,7 @@
         dot.addEventListener('click', () => {
           selectedValue = pos;
           updateVisuals();
+          if (onChangeCb) onChangeCb();
         });
         container.appendChild(dot);
         dots[pos] = dot;
@@ -638,6 +710,7 @@
       autoBtn.addEventListener('click', () => {
         selectedValue = 'auto';
         updateVisuals();
+        if (onChangeCb) onChangeCb();
       });
 
       function updateVisuals() {
@@ -679,7 +752,11 @@
       }
 
       updateVisuals();
-      return { getValue, setValue };
+      return {
+        getValue,
+        setValue,
+        onChange(cb) { onChangeCb = cb; },
+      };
     }
 
     // Initialize 4 pickers
@@ -839,6 +916,12 @@
         editStartPicker.setValue(opts.startSide || 'auto');
         editEndPicker.setValue(opts.endSide || 'auto');
         document.getElementById('editLabelInput').value = opts.label || '';
+
+        // 矢印方向を復元
+        if (opts.startArrow && opts.endArrow) arrowDirEdit.setValue('both');
+        else if (opts.startArrow) arrowDirEdit.setValue('start');
+        else if (opts.endArrow !== false) arrowDirEdit.setValue('end');
+        else arrowDirEdit.setValue('none');
       }
     };
 
@@ -869,8 +952,90 @@
       }
     }
 
-    function getCreateOptions() {
+    // ---- 設定の保存/復元 ----
+    const STORAGE_KEY = 'arrow-connector-prefs';
+
+    // ---- 矢印方向セレクター ----
+    function initArrowDirSelector(containerId) {
+      const container = document.getElementById(containerId);
+      const btns = container.querySelectorAll('.arrow-dir-btn');
+      btns.forEach(btn => {
+        btn.addEventListener('click', () => {
+          btns.forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+        });
+      });
       return {
+        getValue() {
+          const active = container.querySelector('.arrow-dir-btn.active');
+          return active ? active.dataset.value : 'end';
+        },
+        setValue(val) {
+          btns.forEach(b => b.classList.remove('active'));
+          const target = container.querySelector(`[data-value="${val}"]`);
+          if (target) target.classList.add('active');
+        },
+        getArrows() {
+          const v = this.getValue();
+          return {
+            startArrow: v === 'start' || v === 'both',
+            endArrow: v === 'end' || v === 'both',
+          };
+        },
+      };
+    }
+
+    const arrowDirCreate = initArrowDirSelector('arrowDir');
+    const arrowDirEdit = initArrowDirSelector('editArrowDir');
+
+    function savePrefs() {
+      const prefs = {
+        color: document.getElementById('colorPicker').value,
+        strokeWeight: parseInt(strokeWeight.value),
+        curved: document.getElementById('curved').checked,
+        arrowSize: parseInt(arrowSizeInput.value),
+        dashed: document.getElementById('dashed').checked,
+        startSide: startPicker.getValue(),
+        endSide: endPicker.getValue(),
+        arrowDirValue: arrowDirCreate.getValue(),
+      };
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(prefs)); } catch {}
+    }
+
+    function loadPrefs() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) return;
+        const p = JSON.parse(raw);
+        if (p.color) {
+          document.getElementById('colorPicker').value = p.color;
+          colorHex.textContent = p.color;
+        }
+        if (p.strokeWeight) {
+          strokeWeight.value = p.strokeWeight;
+          weightValue.textContent = p.strokeWeight + 'px';
+        }
+        if (typeof p.curved === 'boolean') {
+          document.getElementById('curved').checked = p.curved;
+        }
+        if (p.arrowSize) {
+          arrowSizeInput.value = p.arrowSize;
+          arrowValue.textContent = p.arrowSize;
+        }
+        if (typeof p.dashed === 'boolean') {
+          document.getElementById('dashed').checked = p.dashed;
+        }
+        if (p.startSide !== undefined) startPicker.setValue(p.startSide);
+        if (p.endSide !== undefined) endPicker.setValue(p.endSide);
+        if (p.arrowDirValue !== undefined) arrowDirCreate.setValue(p.arrowDirValue);
+      } catch {}
+    }
+
+    loadPrefs();
+
+    function getCreateOptions() {
+      const arrows = arrowDirCreate.getArrows();
+      const opts = {
         color: document.getElementById('colorPicker').value,
         strokeWeight: parseInt(strokeWeight.value),
         curved: document.getElementById('curved').checked,
@@ -879,10 +1044,15 @@
         startSide: startPicker.getValue(),
         endSide: endPicker.getValue(),
         label: document.getElementById('labelInput').value,
+        startArrow: arrows.startArrow,
+        endArrow: arrows.endArrow,
       };
+      savePrefs();
+      return opts;
     }
 
     function getEditOptions() {
+      const arrows = arrowDirEdit.getArrows();
       return {
         color: document.getElementById('editColorPicker').value,
         strokeWeight: parseInt(editStrokeWeight.value),
@@ -892,6 +1062,8 @@
         startSide: editStartPicker.getValue(),
         endSide: editEndPicker.getValue(),
         label: document.getElementById('editLabelInput').value,
+        startArrow: arrows.startArrow,
+        endArrow: arrows.endArrow,
       };
     }
 

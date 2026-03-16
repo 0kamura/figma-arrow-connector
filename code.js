@@ -189,6 +189,14 @@ function bezierPointAndTangent(p0, p1, p2, p3, t) {
         3 * t * t * (p3.y - p2.y);
     return { point, angle: Math.atan2(ty, tx) };
 }
+// 矢じりの深さ（先端から根元までの長さ）
+function arrowDepth(size) {
+    return size * Math.cos(Math.PI / 6); // size * √3/2
+}
+// 点を角度方向にオフセット
+function offsetPoint(pt, angle, dist) {
+    return { x: pt.x + Math.cos(angle) * dist, y: pt.y + Math.sin(angle) * dist };
+}
 // 矢じり（三角形）を作成
 function createArrowhead(tip, angle, size, color) {
     const arrow = figma.createVector();
@@ -412,46 +420,111 @@ async function drawArrow(nodeA, nodeB, options, existingGroup) {
         styleVector(vec);
         return vec;
     }
+    const doStartArrow = options.startArrow !== false;
+    const doEndArrow = options.endArrow !== false;
+    const depth = arrowDepth(options.arrowSize);
+    function bezierPath(pts, sx, sy) {
+        const r = pts.map(p => ({ x: p.x - sx, y: p.y - sy }));
+        return `M ${r[0].x} ${r[0].y} C ${r[1].x} ${r[1].y} ${r[2].x} ${r[2].y} ${r[3].x} ${r[3].y}`;
+    }
+    function polyPath(pts, sx, sy) {
+        const r = pts.map(p => ({ x: p.x - sx, y: p.y - sy }));
+        let d = `M ${r[0].x} ${r[0].y}`;
+        for (let i = 1; i < r.length; i++)
+            d += ` L ${r[i].x} ${r[i].y}`;
+        return d;
+    }
+    // ポリラインの端点を矢じり分短くする
+    function shortenPolyline(pts, fromStart, amount) {
+        if (pts.length < 2)
+            return pts;
+        const result = [...pts];
+        if (fromStart) {
+            const dx = result[1].x - result[0].x;
+            const dy = result[1].y - result[0].y;
+            const len = Math.sqrt(dx * dx + dy * dy);
+            if (len > amount) {
+                result[0] = { x: result[0].x + (dx / len) * amount, y: result[0].y + (dy / len) * amount };
+            }
+        }
+        else {
+            const last = result.length - 1;
+            const dx = result[last].x - result[last - 1].x;
+            const dy = result[last].y - result[last - 1].y;
+            const len = Math.sqrt(dx * dx + dy * dy);
+            if (len > amount) {
+                result[last] = { x: result[last].x - (dx / len) * amount, y: result[last].y - (dy / len) * amount };
+            }
+        }
+        return result;
+    }
     if (options.curved) {
         const { cp1, cp2 } = calcControlPoints(start, end);
-        const p0 = start.point, p1 = cp1, p2 = cp2, p3 = end.point;
+        let p0 = start.point, p1 = cp1, p2 = cp2, p3 = end.point;
+        // 矢じり分だけ曲線の端を短くするため t をオフセット
+        let tStart = 0;
+        let tEnd = 1;
+        if (doEndArrow) {
+            tEnd = findBezierT(p0, p1, p2, p3, 1, depth, -1);
+        }
+        if (doStartArrow) {
+            tStart = findBezierT(p0, p1, p2, p3, 0, depth, 1);
+        }
+        // 短くした曲線を取得
+        // まず終点側を切る → その結果の前半から始点側を切る
+        let curvePts = [p0, p1, p2, p3];
+        if (doEndArrow) {
+            curvePts = splitBezier(curvePts[0], curvePts[1], curvePts[2], curvePts[3], tEnd).first;
+        }
+        if (doStartArrow) {
+            const tAdj = doEndArrow ? tStart / tEnd : tStart; // tStart を短くされた範囲に再マッピング
+            curvePts = splitBezier(curvePts[0], curvePts[1], curvePts[2], curvePts[3], tAdj).second;
+        }
         if (options.label) {
             const mid = bezierPointAndTangent(p0, p1, p2, p3, 0.5);
             const labelNode = await createLabel(mid.point, options.label, color, options.strokeWeight);
             const halfGap = Math.max(labelNode.width, labelNode.height) / 2 + 6;
             const t1 = findBezierT(p0, p1, p2, p3, 0.5, halfGap, -1);
             const t2 = findBezierT(p0, p1, p2, p3, 0.5, halfGap, 1);
-            const seg1 = splitBezier(p0, p1, p2, p3, t1).first;
-            const seg2 = splitBezier(p0, p1, p2, p3, t2).second;
-            children.push(createLineVector([...seg1], (sx, sy) => {
-                const r = seg1.map(p => ({ x: p.x - sx, y: p.y - sy }));
-                return `M ${r[0].x} ${r[0].y} C ${r[1].x} ${r[1].y} ${r[2].x} ${r[2].y} ${r[3].x} ${r[3].y}`;
-            }));
+            // ギャップ前半: start → t1 (矢じりオフセット込み)
+            let seg1 = splitBezier(p0, p1, p2, p3, t1).first;
+            if (doStartArrow) {
+                const tAdj = tStart / t1;
+                seg1 = splitBezier(seg1[0], seg1[1], seg1[2], seg1[3], tAdj).second;
+            }
+            // ギャップ後半: t2 → end (矢じりオフセット込み)
+            let seg2 = splitBezier(p0, p1, p2, p3, t2).second;
+            if (doEndArrow) {
+                const tAdj = (tEnd - t2) / (1 - t2);
+                seg2 = splitBezier(seg2[0], seg2[1], seg2[2], seg2[3], tAdj).first;
+            }
+            children.push(createLineVector([...seg1], (sx, sy) => bezierPath(seg1, sx, sy)));
             children.push(labelNode);
-            children.push(createLineVector([...seg2], (sx, sy) => {
-                const r = seg2.map(p => ({ x: p.x - sx, y: p.y - sy }));
-                return `M ${r[0].x} ${r[0].y} C ${r[1].x} ${r[1].y} ${r[2].x} ${r[2].y} ${r[3].x} ${r[3].y}`;
-            }));
+            children.push(createLineVector([...seg2], (sx, sy) => bezierPath(seg2, sx, sy)));
         }
         else {
-            children.push(createLineVector([p0, p1, p2, p3], (sx, sy) => {
-                const r = [p0, p1, p2, p3].map(p => ({ x: p.x - sx, y: p.y - sy }));
-                return `M ${r[0].x} ${r[0].y} C ${r[1].x} ${r[1].y} ${r[2].x} ${r[2].y} ${r[3].x} ${r[3].y}`;
-            }));
+            children.push(createLineVector([...curvePts], (sx, sy) => bezierPath(curvePts, sx, sy)));
         }
-        const { angle } = bezierPointAndTangent(p0, p1, p2, p3, 1);
-        children.push(createArrowhead(end.point, angle, options.arrowSize, color));
+        // 矢じり（元の曲線の角度で配置）
+        if (doStartArrow) {
+            const { angle: startAngle } = bezierPointAndTangent(p0, p1, p2, p3, 0);
+            children.push(createArrowhead(start.point, startAngle + Math.PI, options.arrowSize, color));
+        }
+        if (doEndArrow) {
+            const { angle: endAngle } = bezierPointAndTangent(p0, p1, p2, p3, 1);
+            children.push(createArrowhead(end.point, endAngle, options.arrowSize, color));
+        }
     }
     else {
         // --- 直角折れ線（エルボー）矢印 ---
         const waypoints = calcElbowPoints(start, end);
-        const allPoints = [start.point, ...waypoints, end.point];
-        function polyPath(pts, sx, sy) {
-            const r = pts.map(p => ({ x: p.x - sx, y: p.y - sy }));
-            let d = `M ${r[0].x} ${r[0].y}`;
-            for (let i = 1; i < r.length; i++)
-                d += ` L ${r[i].x} ${r[i].y}`;
-            return d;
+        let allPoints = [start.point, ...waypoints, end.point];
+        // 矢じり分短くする
+        if (doEndArrow) {
+            allPoints = shortenPolyline(allPoints, false, depth);
+        }
+        if (doStartArrow) {
+            allPoints = shortenPolyline(allPoints, true, depth);
         }
         if (options.label) {
             const midPt = getPathMidpoint(allPoints);
@@ -469,10 +542,20 @@ async function drawArrow(nodeA, nodeB, options, existingGroup) {
         else {
             children.push(createLineVector(allPoints, (sx, sy) => polyPath(allPoints, sx, sy)));
         }
-        const prevPt = allPoints[allPoints.length - 2];
-        const endPt = allPoints[allPoints.length - 1];
-        const angle = Math.atan2(endPt.y - prevPt.y, endPt.x - prevPt.x);
-        children.push(createArrowhead(end.point, angle, options.arrowSize, color));
+        // 矢じり（元のポイントの角度で配置）
+        const origPoints = [start.point, ...waypoints, end.point];
+        if (doEndArrow) {
+            const prevPt = origPoints[origPoints.length - 2];
+            const endPt = origPoints[origPoints.length - 1];
+            const angle = Math.atan2(endPt.y - prevPt.y, endPt.x - prevPt.x);
+            children.push(createArrowhead(end.point, angle, options.arrowSize, color));
+        }
+        if (doStartArrow) {
+            const firstPt = origPoints[0];
+            const nextPt = origPoints[1];
+            const angle = Math.atan2(firstPt.y - nextPt.y, firstPt.x - nextPt.x);
+            children.push(createArrowhead(start.point, angle, options.arrowSize, color));
+        }
     }
     // 既存グループがあれば中身を入れ替え、なければ新規作成
     let groupNode;
@@ -668,7 +751,7 @@ figma.ui.onmessage = async (msg) => {
             figma.notify("選択したフレームが見つかりません", { error: true });
             return;
         }
-        const options = { color, strokeWeight, curved, arrowSize, dashed, startSide: startSide || "auto", endSide: endSide || "auto", label: label || "" };
+        const options = { color, strokeWeight, curved, arrowSize, dashed, startSide: startSide || "auto", endSide: endSide || "auto", label: label || "", startArrow: msg.startArrow !== undefined ? msg.startArrow : false, endArrow: msg.endArrow !== undefined ? msg.endArrow : true };
         const arrow = await drawArrow(source, target, options);
         figma.currentPage.selection = [arrow];
         figma.viewport.scrollAndZoomIntoView([arrow]);
@@ -693,7 +776,7 @@ figma.ui.onmessage = async (msg) => {
             figma.notify("接続先のフレームが削除されています", { error: true });
             return;
         }
-        const options = { color, strokeWeight, curved, arrowSize, dashed, startSide: startSide || "auto", endSide: endSide || "auto", label: label || "" };
+        const options = { color, strokeWeight, curved, arrowSize, dashed, startSide: startSide || "auto", endSide: endSide || "auto", label: label || "", startArrow: msg.startArrow !== undefined ? msg.startArrow : false, endArrow: msg.endArrow !== undefined ? msg.endArrow : true };
         const newArrow = await drawArrow(source, target, options, arrowGroup);
         figma.currentPage.selection = [newArrow];
         arrowIndex = buildArrowIndex();
@@ -756,7 +839,7 @@ figma.ui.onmessage = async (msg) => {
             figma.notify("接続先のフレームが削除されています", { error: true });
             return;
         }
-        const options = { color, strokeWeight, curved, arrowSize, dashed, startSide: startSide || "auto", endSide: endSide || "auto", label: label || "" };
+        const options = { color, strokeWeight, curved, arrowSize, dashed, startSide: startSide || "auto", endSide: endSide || "auto", label: label || "", startArrow: msg.startArrow !== undefined ? msg.startArrow : false, endArrow: msg.endArrow !== undefined ? msg.endArrow : true };
         const newArrow = await drawArrow(source, target, options, arrowGroup);
         figma.currentPage.selection = [newArrow];
         arrowIndex = buildArrowIndex();
