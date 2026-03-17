@@ -533,13 +533,9 @@
         <div id="swatchPanel"></div>
       </div>
       <div class="options-grid" style="margin-top: 8px;">
-        <div class="option-group">
+        <div class="option-group" style="grid-column: 1 / -1;">
           <label>線の太さ <span class="range-value" id="weightValue">2px</span></label>
           <input type="range" id="strokeWeight" min="1" max="8" value="2" />
-        </div>
-        <div class="option-group">
-          <label>矢じりサイズ <span class="range-value" id="arrowValue">12</span></label>
-          <input type="range" id="arrowSize" min="6" max="24" value="12" />
         </div>
       </div>
       <div style="margin-top: 8px;">
@@ -638,13 +634,9 @@
         <div id="editSwatchPanel"></div>
       </div>
       <div class="options-grid" style="margin-top: 8px;">
-        <div class="option-group">
+        <div class="option-group" style="grid-column: 1 / -1;">
           <label>線の太さ <span class="range-value" id="editWeightValue">2px</span></label>
           <input type="range" id="editStrokeWeight" min="1" max="8" value="2" />
-        </div>
-        <div class="option-group">
-          <label>矢じりサイズ <span class="range-value" id="editArrowValue">12</span></label>
-          <input type="range" id="editArrowSize" min="6" max="24" value="12" />
         </div>
       </div>
       <div style="margin-top: 8px;">
@@ -812,9 +804,6 @@
     const hint = document.getElementById('hint');
     const strokeWeight = document.getElementById('strokeWeight');
     const weightValue = document.getElementById('weightValue');
-    const arrowSizeInput = document.getElementById('arrowSize');
-    const arrowValue = document.getElementById('arrowValue');
-
     // 折れ位置スライダー
     const bendPosition = document.getElementById('bendPosition');
     const bendValue = document.getElementById('bendValue');
@@ -846,20 +835,11 @@
     const editFrameList = document.getElementById('editFrameList');
     const editStrokeWeight = document.getElementById('editStrokeWeight');
     const editWeightValue = document.getElementById('editWeightValue');
-    const editArrowSizeInput = document.getElementById('editArrowSize');
-    const editArrowValue = document.getElementById('editArrowValue');
-
     strokeWeight.addEventListener('input', () => {
       weightValue.textContent = strokeWeight.value + 'px';
     });
-    arrowSizeInput.addEventListener('input', () => {
-      arrowValue.textContent = arrowSizeInput.value;
-    });
     editStrokeWeight.addEventListener('input', () => {
       editWeightValue.textContent = editStrokeWeight.value + 'px';
-    });
-    editArrowSizeInput.addEventListener('input', () => {
-      editArrowValue.textContent = editArrowSizeInput.value;
     });
 
     // ---- Color picker + swatch sync ----
@@ -971,8 +951,6 @@
         document.getElementById('editColorHex').textContent = opts.color;
         editStrokeWeight.value = opts.strokeWeight;
         editWeightValue.textContent = opts.strokeWeight + 'px';
-        editArrowSizeInput.value = opts.arrowSize;
-        editArrowValue.textContent = opts.arrowSize;
         document.getElementById('editCurved').checked = opts.curved;
         document.getElementById('editDashed').checked = opts.dashed;
 
@@ -1061,7 +1039,6 @@
         color: document.getElementById('colorPicker').value,
         strokeWeight: parseInt(strokeWeight.value),
         curved: document.getElementById('curved').checked,
-        arrowSize: parseInt(arrowSizeInput.value),
         dashed: document.getElementById('dashed').checked,
         startSide: startPicker.getValue(),
         endSide: endPicker.getValue(),
@@ -1087,10 +1064,6 @@
         if (typeof p.curved === 'boolean') {
           document.getElementById('curved').checked = p.curved;
         }
-        if (p.arrowSize) {
-          arrowSizeInput.value = p.arrowSize;
-          arrowValue.textContent = p.arrowSize;
-        }
         if (typeof p.dashed === 'boolean') {
           document.getElementById('dashed').checked = p.dashed;
         }
@@ -1113,7 +1086,6 @@
         color: document.getElementById('colorPicker').value,
         strokeWeight: parseInt(strokeWeight.value),
         curved: document.getElementById('curved').checked,
-        arrowSize: parseInt(arrowSizeInput.value),
         dashed: document.getElementById('dashed').checked,
         startSide: startPicker.getValue(),
         endSide: endPicker.getValue(),
@@ -1132,7 +1104,6 @@
         color: document.getElementById('editColorPicker').value,
         strokeWeight: parseInt(editStrokeWeight.value),
         curved: document.getElementById('editCurved').checked,
-        arrowSize: parseInt(editArrowSizeInput.value),
         dashed: document.getElementById('editDashed').checked,
         startSide: editStartPicker.getValue(),
         endSide: editEndPicker.getValue(),
@@ -1148,8 +1119,6 @@
       strokeWeight.value = opts.strokeWeight;
       weightValue.textContent = opts.strokeWeight + 'px';
       document.getElementById('curved').checked = opts.curved;
-      arrowSizeInput.value = opts.arrowSize;
-      arrowValue.textContent = opts.arrowSize;
       document.getElementById('dashed').checked = opts.dashed;
       bendPosition.value = Math.round(opts.bendPosition * 100);
       bendValue.textContent = Math.round(opts.bendPosition * 100) + '%';
