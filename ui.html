@@ -13,10 +13,8 @@
       --c-accent: #1f1f1f;
       --c-accent-hover: #333333;
       --c-accent-soft: #f4f4f4;
-      --c-start: #1f1f1f;
-      --c-end: #888888;
       --c-danger: #e24c4c;
-      --radius: 10px;
+      --radius: 8px;
     }
 
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -25,244 +23,32 @@
       font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
       font-size: 12px;
       color: var(--c-text);
-      padding: 16px;
+      padding: 20px 24px;
       background: var(--c-bg);
       line-height: 1.5;
     }
 
-    h2 {
-      font-size: 14px;
+    /* ---- Section ---- */
+    .section { margin-bottom: 20px; }
+    .section-title {
+      font-size: 13px;
       font-weight: 600;
-      margin-bottom: 12px;
       color: var(--c-text);
+      margin-bottom: 10px;
     }
 
-    .mode-label {
-      font-size: 11px;
-      font-weight: 600;
-      color: var(--c-accent);
-      background: var(--c-accent-soft);
-      border-radius: 4px;
-      padding: 2px 8px;
-      display: inline-block;
-      margin-bottom: 8px;
-    }
-
-    .section { margin-bottom: 14px; }
-
-    .section-label {
-      font-size: 11px;
-      font-weight: 500;
-      color: var(--c-text2);
-      margin-bottom: 6px;
-    }
-
-    /* ---- Frame list ---- */
-    .frame-list {
-      background: var(--c-bg2);
-      border-radius: var(--radius);
-      padding: 6px;
-      min-height: 48px;
+    /* ---- Frame section ---- */
+    .frame-area {
       display: flex;
-      flex-direction: column;
-      gap: 4px;
-    }
-    .frame-item {
-      background: var(--c-bg);
-      border-radius: 6px;
-      padding: 8px 10px;
-      font-size: 12px;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-    .frame-item .icon {
-      width: 10px;
-      height: 10px;
-      border-radius: 3px;
-      flex-shrink: 0;
-    }
-    .frame-item .name {
-      flex: 1;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-      color: var(--c-text);
-    }
-    .frame-item .badge {
-      font-size: 10px;
-      color: #fff;
-      border-radius: 4px;
-      padding: 1px 6px;
-      font-weight: 600;
-    }
-    .empty-state {
-      color: var(--c-text3);
-      font-size: 11px;
-      text-align: center;
-      padding: 12px;
-    }
-
-    /* ---- Options ---- */
-    .options-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px;
-    }
-    .option-group {
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-    }
-    .option-group label {
-      font-size: 11px;
-      color: var(--c-text2);
-      font-weight: 500;
-    }
-    .option-group input[type="range"] {
-      width: 100%;
-      accent-color: var(--c-accent);
-    }
-    .option-group .range-value {
-      font-size: 11px;
-      color: var(--c-text3);
-      text-align: right;
-    }
-
-    /* ---- Toggle ---- */
-    .toggle-row {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 5px 0;
-    }
-    .toggle-row label {
-      font-size: 12px;
-      color: var(--c-text);
-    }
-    .toggle {
-      position: relative;
-      width: 36px;
-      height: 20px;
-    }
-    .toggle input {
-      opacity: 0;
-      position: absolute;
-      width: 100%;
-      height: 100%;
-      margin: 0;
-      cursor: pointer;
-      z-index: 1;
-    }
-    .toggle .slider {
-      position: absolute;
-      cursor: pointer;
-      inset: 0;
-      background: var(--c-border);
-      border-radius: 20px;
-      transition: 0.2s;
-    }
-    .toggle .slider::before {
-      content: "";
-      position: absolute;
-      width: 16px;
-      height: 16px;
-      left: 2px;
-      bottom: 2px;
-      background: var(--c-bg);
-      border-radius: 50%;
-      transition: 0.2s;
-    }
-    .toggle input:checked + .slider {
-      background: var(--c-accent);
-    }
-    .toggle input:checked + .slider::before {
-      transform: translateX(16px);
-    }
-
-    /* ---- Buttons ---- */
-    .btn {
-      width: 100%;
-      padding: 10px;
-      border: none;
-      border-radius: var(--radius);
-      font-size: 12px;
-      font-weight: 600;
-      font-family: inherit;
-      cursor: pointer;
-      transition: all 0.15s;
-      margin-bottom: 4px;
-    }
-    .btn-primary {
-      background: var(--c-accent);
-      color: #fff;
-    }
-    .btn-primary:hover {
-      background: var(--c-accent-hover);
-    }
-    .btn-primary:disabled {
-      background: var(--c-bg2);
-      color: var(--c-text3);
-      cursor: not-allowed;
-    }
-    .btn-outline {
-      background: var(--c-bg);
-      color: var(--c-text);
-      border: 1px solid var(--c-border);
-    }
-    .btn-outline:hover {
-      background: var(--c-bg2);
-    }
-    .btn-danger {
-      background: var(--c-bg);
-      color: var(--c-danger);
-      border: 1px solid var(--c-danger);
-    }
-    .btn-danger:hover {
-      background: #FFF0F0;
-    }
-    .btn-secondary {
-      background: transparent;
-      color: var(--c-text2);
-    }
-    .btn-secondary:hover {
-      background: var(--c-bg2);
-    }
-    .hint {
-      font-size: 11px;
-      color: var(--c-text3);
-      text-align: center;
-      margin-top: 2px;
-      margin-bottom: 4px;
-    }
-    .btn-row {
-      display: flex;
-      gap: 6px;
-      margin-bottom: 4px;
-    }
-    .btn-row .btn {
-      flex: 1;
-      margin-bottom: 0;
-    }
-    .divider {
-      height: 1px;
-      background: var(--c-border);
-      margin: 10px 0;
-    }
-
-    /* ---- Frame row + swap ---- */
-    .frame-section-row {
-      display: flex;
-      gap: 6px;
+      gap: 8px;
       align-items: center;
     }
-    .frame-section-row .frame-list { flex: 1; }
     .swap-btn {
-      width: 28px;
-      height: 28px;
-      border: 1px solid var(--c-border);
+      width: 32px;
+      height: 32px;
+      border: none;
       border-radius: 6px;
-      background: var(--c-bg);
+      background: transparent;
       cursor: pointer;
       display: flex;
       align-items: center;
@@ -272,82 +58,352 @@
       color: var(--c-text3);
     }
     .swap-btn:hover {
-      border-color: var(--c-accent);
       color: var(--c-accent);
-      background: var(--c-accent-soft);
+      background: var(--c-bg2);
     }
     .swap-btn svg { width: 16px; height: 16px; }
 
-    /* ---- Color ---- */
-    .color-section {
+    .frame-list {
+      flex: 1;
       display: flex;
       flex-direction: column;
-      gap: 6px;
+      gap: 4px;
+      min-height: 48px;
     }
+    .frame-item {
+      background: var(--c-bg2);
+      border-radius: 6px;
+      padding: 6px 8px;
+      font-size: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      height: 28px;
+    }
+    .frame-item .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .frame-item .name {
+      flex: 1;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      color: var(--c-text);
+      font-size: 11px;
+    }
+    .empty-state {
+      color: var(--c-text3);
+      font-size: 11px;
+      text-align: center;
+      padding: 16px 8px;
+    }
+
+    /* ---- Inline Point Picker (small, in frame row) ---- */
+    .pp-inline {
+      position: relative;
+      width: 25px;
+      height: 25px;
+      flex-shrink: 0;
+    }
+    .pp-inline .pp-rect {
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      width: 21px;
+      height: 21px;
+      border: 1px solid var(--c-border);
+      border-radius: 2px;
+    }
+    .pp-inline .pp-dot {
+      position: absolute;
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: var(--c-border);
+      cursor: pointer;
+      transform: translate(-50%, -50%);
+      transition: all 0.1s;
+      z-index: 2;
+    }
+    .pp-inline .pp-dot:hover {
+      background: var(--c-accent);
+      transform: translate(-50%, -50%) scale(1.4);
+    }
+    .pp-inline .pp-dot.active {
+      background: var(--c-accent);
+    }
+    .pp-inline.auto-mode .pp-rect {
+      border-color: var(--c-accent);
+    }
+
+    /* ---- Color section ---- */
     .color-row {
       display: flex;
       gap: 8px;
       align-items: center;
+      margin-bottom: 10px;
     }
-    .color-row input[type="color"] {
-      width: 28px;
-      height: 28px;
+    .color-input-wrap {
+      display: flex;
+      align-items: center;
+      gap: 4px;
       border: 1px solid var(--c-border);
       border-radius: 6px;
-      cursor: pointer;
-      padding: 2px;
+      padding: 4px 8px;
+      height: 26px;
       background: var(--c-bg);
+    }
+    .color-input-wrap .color-swatch {
+      width: 13px;
+      height: 13px;
+      border-radius: 3px;
+      border: 1px solid rgba(0,0,0,0.1);
+      cursor: pointer;
       flex-shrink: 0;
     }
-    .color-hex {
+    .color-input-wrap input[type="color"] {
+      position: absolute;
+      width: 0;
+      height: 0;
+      opacity: 0;
+      pointer-events: none;
+    }
+    .color-input-wrap .hash { font-size: 11px; color: var(--c-text2); }
+    .color-input-wrap .hex-text {
+      font-size: 11px;
+      color: var(--c-text);
+      font-family: 'SF Mono', 'Menlo', 'Consolas', monospace;
+    }
+    .style-select {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      border: 1px solid var(--c-border);
+      border-radius: 6px;
+      padding: 4px 12px;
+      height: 26px;
+      background: var(--c-bg);
+      cursor: pointer;
       font-size: 11px;
       color: var(--c-text2);
+      position: relative;
+      user-select: none;
+    }
+    .style-select:hover { border-color: var(--c-accent); }
+    .style-select .chevron {
+      width: 10px;
+      height: 10px;
+      margin-left: auto;
+    }
+
+    /* Swatch dropdown */
+    .swatch-dropdown {
+      display: none;
+      position: absolute;
+      top: 100%;
+      left: 0;
+      margin-top: 4px;
+      width: 160px;
+      background: var(--c-bg);
+      border: 1px solid var(--c-border);
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      z-index: 100;
+      max-height: 240px;
+      overflow: hidden;
+    }
+    .swatch-dropdown.open { display: block; }
+    .swatch-dropdown-tabs {
+      display: flex;
+      border-bottom: 1px solid var(--c-border);
+      padding: 4px 8px 0;
+    }
+    .swatch-dropdown-tab {
+      padding: 4px 12px;
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--c-text3);
+      border: none;
+      background: none;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      font-family: inherit;
+    }
+    .swatch-dropdown-tab.active {
+      color: var(--c-text);
+      border-bottom-color: var(--c-accent);
+    }
+    .swatch-dropdown-list {
+      overflow-y: auto;
+      max-height: 200px;
+      padding: 4px 0;
+    }
+    .swatch-dropdown-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 12px;
+      cursor: pointer;
+      transition: background 0.1s;
+    }
+    .swatch-dropdown-item:hover { background: var(--c-bg2); }
+    .swatch-dropdown-item .sdi-color {
+      width: 13px;
+      height: 13px;
+      border-radius: 3px;
+      border: 1px solid rgba(0,0,0,0.08);
+      flex-shrink: 0;
+    }
+    .swatch-dropdown-item .sdi-info {
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+    }
+    .swatch-dropdown-item .sdi-name {
+      font-size: 11px;
+      color: var(--c-text);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .swatch-dropdown-item .sdi-hex {
+      font-size: 10px;
+      color: var(--c-text3);
       font-family: 'SF Mono', 'Menlo', 'Consolas', monospace;
+    }
+
+    /* On this page swatches */
+    .swatch-label {
+      font-size: 10px;
+      color: var(--c-text3);
+      font-weight: 500;
+      margin-bottom: 4px;
     }
     .swatch-grid {
       display: flex;
       flex-wrap: wrap;
-      gap: 4px;
+      gap: 2px;
     }
     .swatch {
-      width: 20px;
-      height: 20px;
-      border-radius: 4px;
-      border: 1.5px solid rgba(0,0,0,0.08);
+      width: 14px;
+      height: 14px;
+      border-radius: 3px;
+      border: 1px solid rgba(0,0,0,0.06);
       cursor: pointer;
       transition: all 0.1s;
-      position: relative;
     }
     .swatch:hover {
-      transform: scale(1.15);
+      transform: scale(1.2);
       z-index: 1;
     }
     .swatch.active {
       border-color: var(--c-text);
-      box-shadow: 0 0 0 2px var(--c-accent-soft);
+      box-shadow: 0 0 0 1px var(--c-accent-soft);
     }
-    .swatch-group-label {
-      font-size: 10px;
-      color: var(--c-text3);
-      font-weight: 500;
-      margin-top: 2px;
-    }
-    .no-swatches {
-      font-size: 10px;
-      color: var(--c-text3);
-    }
+    .no-swatches { font-size: 10px; color: var(--c-text3); }
 
-    /* ---- Arrow direction ---- */
+    /* ---- Stroke section ---- */
+    .stroke-top-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 10px;
+    }
+    .weight-group {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .weight-group label {
+      font-size: 11px;
+      color: var(--c-text2);
+    }
+    .weight-input {
+      display: flex;
+      align-items: center;
+      border: 1px solid var(--c-border);
+      border-radius: 5px;
+      padding: 2px 8px;
+      height: 23px;
+      gap: 3px;
+      background: var(--c-bg);
+    }
+    .weight-input .w-prefix {
+      font-size: 11px;
+      color: var(--c-text2);
+      font-weight: 500;
+    }
+    .weight-input input {
+      width: 24px;
+      border: none;
+      background: none;
+      font-size: 11px;
+      font-family: inherit;
+      color: var(--c-text);
+      outline: none;
+      text-align: left;
+    }
+    .weight-input input::-webkit-inner-spin-button { -webkit-appearance: none; }
+
+    .toggle-inline {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .toggle-inline label {
+      font-size: 11px;
+      color: var(--c-text2);
+    }
+    .toggle-sm {
+      position: relative;
+      width: 28px;
+      height: 16px;
+    }
+    .toggle-sm input {
+      opacity: 0;
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      cursor: pointer;
+      z-index: 1;
+    }
+    .toggle-sm .slider {
+      position: absolute;
+      inset: 0;
+      background: var(--c-border);
+      border-radius: 16px;
+      transition: 0.2s;
+    }
+    .toggle-sm .slider::before {
+      content: "";
+      position: absolute;
+      width: 12px;
+      height: 12px;
+      left: 2px;
+      bottom: 2px;
+      background: var(--c-bg);
+      border-radius: 50%;
+      transition: 0.2s;
+    }
+    .toggle-sm input:checked + .slider { background: var(--c-accent); }
+    .toggle-sm input:checked + .slider::before { transform: translateX(12px); }
+
+    /* Arrow direction */
     .arrow-dir {
       display: flex;
-      gap: 3px;
+      gap: 2px;
       background: var(--c-bg2);
       border-radius: var(--radius);
       padding: 3px;
+      margin-bottom: 10px;
     }
     .arrow-dir-btn {
       flex: 1;
-      height: 28px;
+      height: 26px;
       border: none;
       border-radius: 5px;
       background: transparent;
@@ -358,31 +414,86 @@
       transition: all 0.12s;
       padding: 0;
     }
-    .arrow-dir-btn:hover {
-      background: var(--c-bg-hover);
-    }
+    .arrow-dir-btn:hover { background: var(--c-bg-hover); }
     .arrow-dir-btn.active {
       background: var(--c-bg);
       box-shadow: 0 1px 3px rgba(0,0,0,0.08);
     }
     .arrow-dir-btn svg {
-      width: 24px;
-      height: 12px;
-      stroke: var(--c-text3);
-      fill: var(--c-text3);
+      width: 24px; height: 12px;
+      stroke: var(--c-text3); fill: var(--c-text3);
     }
-    .arrow-dir-btn.active svg {
-      stroke: var(--c-text);
-      fill: var(--c-text);
+    .arrow-dir-btn.active svg { stroke: var(--c-text); fill: var(--c-text); }
+
+    .divider {
+      height: 1px;
+      background: var(--c-border);
+      margin: 10px 0;
     }
 
-    /* ---- Label input ---- */
+    /* Bend row */
+    .bend-row {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .bend-top {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .bend-top label {
+      font-size: 11px;
+      color: var(--c-text2);
+    }
+    .bend-input {
+      display: flex;
+      align-items: center;
+      border: 1px solid var(--c-border);
+      border-radius: 5px;
+      padding: 0 6px;
+      height: 17px;
+      gap: 2px;
+      background: var(--c-bg);
+    }
+    .bend-input input {
+      width: 20px;
+      border: none;
+      background: none;
+      font-size: 11px;
+      font-family: inherit;
+      color: var(--c-text);
+      outline: none;
+    }
+    .bend-input input::-webkit-inner-spin-button { -webkit-appearance: none; }
+    .bend-input .unit { font-size: 11px; color: var(--c-text2); }
+
+    /* Custom slider */
+    .custom-slider {
+      -webkit-appearance: none;
+      width: 100%;
+      height: 6px;
+      border-radius: 3px;
+      background: var(--c-accent);
+      outline: none;
+    }
+    .custom-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--c-bg);
+      border: 2px solid var(--c-accent);
+      cursor: pointer;
+    }
+
+    /* ---- Label section ---- */
     .label-input {
       width: 100%;
-      height: 32px;
+      height: 28px;
       border: 1px solid var(--c-border);
       border-radius: 6px;
-      padding: 0 8px;
+      padding: 0 12px;
       font-size: 12px;
       font-family: inherit;
       background: var(--c-bg);
@@ -390,407 +501,329 @@
       outline: none;
       transition: border-color 0.15s;
     }
-    .label-input:focus {
-      border-color: var(--c-accent);
-    }
-    .label-input::placeholder {
-      color: var(--c-text3);
-    }
+    .label-input:focus { border-color: var(--c-accent); }
+    .label-input::placeholder { color: var(--c-text3); }
 
-    /* ---- Point Picker ---- */
-    .picker-row {
-      display: flex;
-      gap: 8px;
-      align-items: flex-start;
-    }
-    .picker-col {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 4px;
-      background: var(--c-bg2);
+    /* ---- Buttons ---- */
+    .btn {
+      width: 100%;
+      padding: 12px;
+      border: none;
       border-radius: var(--radius);
-      padding: 8px 4px 6px;
-    }
-    .picker-col-label {
-      font-size: 11px;
-      font-weight: 600;
-      color: var(--c-text2);
-    }
-    .picker-col-label-start { color: var(--c-start); }
-    .picker-col-label-end { color: var(--c-end); }
-    .option-group-label {
-      font-size: 11px;
-      color: var(--c-text2);
-      font-weight: 500;
-    }
-    .point-picker {
-      position: relative;
-      width: 72px;
-      height: 52px;
-    }
-    .point-picker .pp-rect {
-      position: absolute;
-      top: 8px;
-      left: 12px;
-      width: 48px;
-      height: 36px;
-      border: 1.5px solid var(--c-border);
-      border-radius: 4px;
-      background: var(--c-bg);
-    }
-    .point-picker .pp-dot {
-      position: absolute;
-      width: 10px;
-      height: 10px;
-      border-radius: 50%;
-      border: 1.5px solid var(--c-border);
-      background: var(--c-bg);
-      cursor: pointer;
-      transform: translate(-50%, -50%);
-      transition: all 0.12s;
-      z-index: 2;
-    }
-    .point-picker .pp-dot:hover {
-      border-color: var(--c-accent);
-      background: var(--c-accent-soft);
-      transform: translate(-50%, -50%) scale(1.3);
-    }
-    .point-picker .pp-dot.active {
-      background: var(--c-accent);
-      border-color: var(--c-accent);
-      box-shadow: 0 0 0 2px rgba(123,97,255,0.2);
-    }
-    .point-picker .pp-dot.active:hover {
-      background: var(--c-accent-hover);
-    }
-    .pp-auto-btn {
-      font-size: 10px;
+      font-size: 13px;
       font-weight: 600;
       font-family: inherit;
-      color: var(--c-text3);
-      background: var(--c-bg);
-      border: 1px solid var(--c-border);
-      border-radius: 4px;
-      padding: 2px 10px;
       cursor: pointer;
-      transition: all 0.12s;
+      transition: all 0.15s;
     }
-    .pp-auto-btn:hover {
-      color: var(--c-accent);
-      border-color: var(--c-accent);
-    }
-    .pp-auto-btn.active {
-      color: #fff;
+    .btn-primary {
       background: var(--c-accent);
-      border-color: var(--c-accent);
+      color: #fff;
+    }
+    .btn-primary:hover { background: var(--c-accent-hover); }
+    .btn-primary:disabled {
+      background: var(--c-bg2);
+      color: var(--c-text3);
+      cursor: not-allowed;
+    }
+    .btn-outline {
+      background: var(--c-bg);
+      color: var(--c-text);
+      border: 1px solid var(--c-border);
+    }
+    .btn-outline:hover { background: var(--c-bg2); }
+    .btn-row {
+      display: flex;
+      gap: 8px;
+    }
+    .btn-row .btn { flex: 1; }
+
+    .hint {
+      font-size: 11px;
+      color: var(--c-text3);
+      text-align: center;
+      margin-top: 4px;
     }
   </style>
 </head>
 <body>
-  <!-- 新規作成モード -->
+  <!-- Create Mode -->
   <div id="createMode">
     <div class="section">
-      <div class="section-label">選択中のフレーム</div>
-      <div class="frame-section-row">
-        <div class="frame-list" id="frameList">
-          <div class="empty-state">2つのフレームを選択してください</div>
-        </div>
-        <button class="swap-btn" id="swapBtn" title="始点と終点を入れ替え">
+      <div class="section-title">Frame</div>
+      <div class="frame-area">
+        <button class="swap-btn" id="swapBtn" title="Swap start / end">
           <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
             <path d="M4 2 L4 14 M4 14 L7 11 M4 14 L1 11"/>
             <path d="M12 14 L12 2 M12 2 L9 5 M12 2 L15 5"/>
           </svg>
         </button>
-      </div>
-    </div>
-
-    <div class="section">
-      <div class="section-label">接続位置</div>
-      <div class="picker-row">
-        <div class="picker-col">
-          <div class="picker-col-label picker-col-label-start">始点</div>
-          <div class="point-picker" id="startPicker"></div>
-          <button class="pp-auto-btn active" id="startAutoBtn">AUTO</button>
-        </div>
-        <div class="picker-col">
-          <div class="picker-col-label picker-col-label-end">終点</div>
-          <div class="point-picker" id="endPicker"></div>
-          <button class="pp-auto-btn active" id="endAutoBtn">AUTO</button>
+        <div class="frame-list" id="frameList">
+          <div class="empty-state">Select 2 frames</div>
         </div>
       </div>
     </div>
 
     <div class="section">
-      <div class="section-label">スタイル設定</div>
-      <div class="color-section">
-        <label class="option-group-label">カラー</label>
-        <div class="color-row">
+      <div class="section-title">Color</div>
+      <div class="color-row">
+        <div class="color-input-wrap">
+          <div class="color-swatch" id="colorSwatch" style="background:#333333"></div>
           <input type="color" id="colorPicker" value="#333333" />
-          <span class="color-hex" id="colorHex">#333333</span>
+          <span class="hash">#</span>
+          <span class="hex-text" id="colorHex">333333</span>
         </div>
-        <div id="swatchPanel"></div>
-      </div>
-      <div class="options-grid" style="margin-top: 8px;">
-        <div class="option-group" style="grid-column: 1 / -1;">
-          <label>線の太さ <span class="range-value" id="weightValue">2px</span></label>
-          <input type="range" id="strokeWeight" min="1" max="8" value="2" />
-        </div>
-      </div>
-      <div style="margin-top: 8px;">
-        <div class="toggle-row">
-          <label>カーブ</label>
-          <div class="toggle">
-            <input type="checkbox" id="curved" />
-            <span class="slider"></span>
+        <div class="style-select" id="styleSelect">
+          <span>Select Style/variable</span>
+          <svg class="chevron" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 5l3 3 3-3"/></svg>
+          <div class="swatch-dropdown" id="swatchDropdown">
+            <div class="swatch-dropdown-tabs" id="swatchTabs">
+              <button class="swatch-dropdown-tab active" data-tab="styles">Style</button>
+              <button class="swatch-dropdown-tab" data-tab="variables">Variable</button>
+            </div>
+            <div class="swatch-dropdown-list" id="swatchList"></div>
           </div>
         </div>
-        <div class="toggle-row">
-          <label>破線</label>
-          <div class="toggle">
+      </div>
+      <div class="swatch-label">On this page</div>
+      <div class="swatch-grid" id="swatchGrid"></div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Stroke</div>
+      <div class="stroke-top-row">
+        <div class="weight-group">
+          <label>Weight</label>
+          <div class="weight-input">
+            <span class="w-prefix">W</span>
+            <input type="number" id="strokeWeight" min="1" max="20" value="2" />
+          </div>
+        </div>
+        <div class="toggle-inline">
+          <label>Dashed:</label>
+          <div class="toggle-sm">
             <input type="checkbox" id="dashed" />
             <span class="slider"></span>
           </div>
         </div>
-        <div class="option-group" id="bendRow" style="display:flex; margin-top: 6px;">
-          <label>折れ位置 <span class="range-value" id="bendValue">50%</span></label>
-          <input type="range" id="bendPosition" min="5" max="95" value="50" />
+      </div>
+      <div class="arrow-dir" id="arrowDir">
+        <button class="arrow-dir-btn" data-value="none" title="No arrow">
+          <svg viewBox="0 0 24 12" fill="none"><line x1="2" y1="6" x2="22" y2="6" stroke-width="1.5" stroke-linecap="round"/></svg>
+        </button>
+        <button class="arrow-dir-btn" data-value="start" title="Start only">
+          <svg viewBox="0 0 24 12"><line x1="6" y1="6" x2="22" y2="6" stroke-width="1.5" stroke-linecap="round" fill="none"/><polygon points="2,6 8,2 8,10" stroke="none"/></svg>
+        </button>
+        <button class="arrow-dir-btn active" data-value="end" title="End only">
+          <svg viewBox="0 0 24 12"><line x1="2" y1="6" x2="18" y2="6" stroke-width="1.5" stroke-linecap="round" fill="none"/><polygon points="22,6 16,2 16,10" stroke="none"/></svg>
+        </button>
+        <button class="arrow-dir-btn" data-value="both" title="Both">
+          <svg viewBox="0 0 24 12"><line x1="6" y1="6" x2="18" y2="6" stroke-width="1.5" stroke-linecap="round" fill="none"/><polygon points="22,6 16,2 16,10" stroke="none"/><polygon points="2,6 8,2 8,10" stroke="none"/></svg>
+        </button>
+      </div>
+      <div class="divider"></div>
+      <div class="toggle-inline" style="margin-bottom:10px;">
+        <label>Curved:</label>
+        <div class="toggle-sm">
+          <input type="checkbox" id="curved" />
+          <span class="slider"></span>
         </div>
       </div>
-      <div style="margin-top: 8px;">
-        <div class="option-group">
-          <label>矢じり方向</label>
-          <div class="arrow-dir" id="arrowDir">
-            <button class="arrow-dir-btn" data-value="none" title="矢じりなし">
-              <svg viewBox="0 0 24 12" fill="none"><line x1="2" y1="6" x2="22" y2="6" stroke-width="1.5" stroke-linecap="round"/></svg>
-            </button>
-            <button class="arrow-dir-btn active" data-value="end" title="終点のみ">
-              <svg viewBox="0 0 24 12"><line x1="2" y1="6" x2="18" y2="6" stroke-width="1.5" stroke-linecap="round" fill="none"/><polygon points="22,6 16,2 16,10" stroke="none"/></svg>
-            </button>
-            <button class="arrow-dir-btn" data-value="start" title="始点のみ">
-              <svg viewBox="0 0 24 12"><line x1="6" y1="6" x2="22" y2="6" stroke-width="1.5" stroke-linecap="round" fill="none"/><polygon points="2,6 8,2 8,10" stroke="none"/></svg>
-            </button>
-            <button class="arrow-dir-btn" data-value="both" title="両方">
-              <svg viewBox="0 0 24 12"><line x1="6" y1="6" x2="18" y2="6" stroke-width="1.5" stroke-linecap="round" fill="none"/><polygon points="22,6 16,2 16,10" stroke="none"/><polygon points="2,6 8,2 8,10" stroke="none"/></svg>
-            </button>
+      <div class="bend-row" id="bendRow">
+        <div class="bend-top">
+          <label>Break Point</label>
+          <div class="bend-input">
+            <input type="number" id="bendPositionInput" min="5" max="95" value="50" />
+            <span class="unit">%</span>
           </div>
         </div>
-      </div>
-      <div style="margin-top: 8px;">
-        <div class="option-group">
-          <label>ラベル</label>
-          <input type="text" class="label-input" id="labelInput" placeholder="テキストを入力..." />
-        </div>
+        <input type="range" class="custom-slider" id="bendPosition" min="5" max="95" value="50" />
       </div>
     </div>
 
-    <button class="btn btn-primary" id="connectBtn" disabled>矢印で接続</button>
-    <div class="hint" id="hint">2つのフレームを選択すると接続できます</div>
+    <div class="section">
+      <div class="section-title">Label</div>
+      <input type="text" class="label-input" id="labelInput" placeholder="Input Text" />
+    </div>
 
+    <div class="divider"></div>
+    <button class="btn btn-primary" id="connectBtn" disabled>Create Arrow</button>
+    <div class="hint" id="hint">Select 2 frames to connect</div>
   </div>
 
-  <!-- 編集モード -->
+  <!-- Edit Mode -->
   <div id="editMode" style="display:none;">
-    <div class="mode-label">編集モード</div>
-
     <div class="section">
-      <div class="section-label">接続中のフレーム</div>
-      <div class="frame-section-row">
-        <div class="frame-list" id="editFrameList"></div>
-        <button class="swap-btn" id="editSwapBtn" title="始点と終点を入れ替え">
+      <div class="section-title">Frame</div>
+      <div class="frame-area">
+        <button class="swap-btn" id="editSwapBtn" title="Swap start / end">
           <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
             <path d="M4 2 L4 14 M4 14 L7 11 M4 14 L1 11"/>
             <path d="M12 14 L12 2 M12 2 L9 5 M12 2 L15 5"/>
           </svg>
         </button>
+        <div class="frame-list" id="editFrameList"></div>
       </div>
     </div>
 
     <div class="section">
-      <div class="section-label">接続位置</div>
-      <div class="picker-row">
-        <div class="picker-col">
-          <div class="picker-col-label picker-col-label-start">始点</div>
-          <div class="point-picker" id="editStartPicker"></div>
-          <button class="pp-auto-btn active" id="editStartAutoBtn">AUTO</button>
-        </div>
-        <div class="picker-col">
-          <div class="picker-col-label picker-col-label-end">終点</div>
-          <div class="point-picker" id="editEndPicker"></div>
-          <button class="pp-auto-btn active" id="editEndAutoBtn">AUTO</button>
-        </div>
-      </div>
-    </div>
-
-    <div class="section">
-      <div class="section-label">スタイル設定</div>
-      <div class="color-section">
-        <label class="option-group-label">カラー</label>
-        <div class="color-row">
+      <div class="section-title">Color</div>
+      <div class="color-row">
+        <div class="color-input-wrap">
+          <div class="color-swatch" id="editColorSwatch" style="background:#333333"></div>
           <input type="color" id="editColorPicker" value="#333333" />
-          <span class="color-hex" id="editColorHex">#333333</span>
+          <span class="hash">#</span>
+          <span class="hex-text" id="editColorHex">333333</span>
         </div>
-        <div id="editSwatchPanel"></div>
-      </div>
-      <div class="options-grid" style="margin-top: 8px;">
-        <div class="option-group" style="grid-column: 1 / -1;">
-          <label>線の太さ <span class="range-value" id="editWeightValue">2px</span></label>
-          <input type="range" id="editStrokeWeight" min="1" max="8" value="2" />
-        </div>
-      </div>
-      <div style="margin-top: 8px;">
-        <div class="toggle-row">
-          <label>カーブ</label>
-          <div class="toggle">
-            <input type="checkbox" id="editCurved" />
-            <span class="slider"></span>
+        <div class="style-select" id="editStyleSelect">
+          <span>Select Style/variable</span>
+          <svg class="chevron" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 5l3 3 3-3"/></svg>
+          <div class="swatch-dropdown" id="editSwatchDropdown">
+            <div class="swatch-dropdown-tabs" id="editSwatchTabs">
+              <button class="swatch-dropdown-tab active" data-tab="styles">Style</button>
+              <button class="swatch-dropdown-tab" data-tab="variables">Variable</button>
+            </div>
+            <div class="swatch-dropdown-list" id="editSwatchList"></div>
           </div>
         </div>
-        <div class="toggle-row">
-          <label>破線</label>
-          <div class="toggle">
+      </div>
+      <div class="swatch-label">On this page</div>
+      <div class="swatch-grid" id="editSwatchGrid"></div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Stroke</div>
+      <div class="stroke-top-row">
+        <div class="weight-group">
+          <label>Weight</label>
+          <div class="weight-input">
+            <span class="w-prefix">W</span>
+            <input type="number" id="editStrokeWeight" min="1" max="20" value="2" />
+          </div>
+        </div>
+        <div class="toggle-inline">
+          <label>Dashed:</label>
+          <div class="toggle-sm">
             <input type="checkbox" id="editDashed" />
             <span class="slider"></span>
           </div>
         </div>
-        <div class="option-group" id="editBendRow" style="display:none; margin-top: 6px;">
-          <label>折れ位置 <span class="range-value" id="editBendValue">50%</span></label>
-          <input type="range" id="editBendPosition" min="5" max="95" value="50" />
+      </div>
+      <div class="arrow-dir" id="editArrowDir">
+        <button class="arrow-dir-btn" data-value="none" title="No arrow">
+          <svg viewBox="0 0 24 12" fill="none"><line x1="2" y1="6" x2="22" y2="6" stroke-width="1.5" stroke-linecap="round"/></svg>
+        </button>
+        <button class="arrow-dir-btn" data-value="start" title="Start only">
+          <svg viewBox="0 0 24 12"><line x1="6" y1="6" x2="22" y2="6" stroke-width="1.5" stroke-linecap="round" fill="none"/><polygon points="2,6 8,2 8,10" stroke="none"/></svg>
+        </button>
+        <button class="arrow-dir-btn active" data-value="end" title="End only">
+          <svg viewBox="0 0 24 12"><line x1="2" y1="6" x2="18" y2="6" stroke-width="1.5" stroke-linecap="round" fill="none"/><polygon points="22,6 16,2 16,10" stroke="none"/></svg>
+        </button>
+        <button class="arrow-dir-btn" data-value="both" title="Both">
+          <svg viewBox="0 0 24 12"><line x1="6" y1="6" x2="18" y2="6" stroke-width="1.5" stroke-linecap="round" fill="none"/><polygon points="22,6 16,2 16,10" stroke="none"/><polygon points="2,6 8,2 8,10" stroke="none"/></svg>
+        </button>
+      </div>
+      <div class="divider"></div>
+      <div class="toggle-inline" style="margin-bottom:10px;">
+        <label>Curved:</label>
+        <div class="toggle-sm">
+          <input type="checkbox" id="editCurved" />
+          <span class="slider"></span>
         </div>
       </div>
-      <div style="margin-top: 8px;">
-        <div class="option-group">
-          <label>矢じり方向</label>
-          <div class="arrow-dir" id="editArrowDir">
-            <button class="arrow-dir-btn" data-value="none" title="矢じりなし">
-              <svg viewBox="0 0 24 12" fill="none"><line x1="2" y1="6" x2="22" y2="6" stroke-width="1.5" stroke-linecap="round"/></svg>
-            </button>
-            <button class="arrow-dir-btn active" data-value="end" title="終点のみ">
-              <svg viewBox="0 0 24 12"><line x1="2" y1="6" x2="18" y2="6" stroke-width="1.5" stroke-linecap="round" fill="none"/><polygon points="22,6 16,2 16,10" stroke="none"/></svg>
-            </button>
-            <button class="arrow-dir-btn" data-value="start" title="始点のみ">
-              <svg viewBox="0 0 24 12"><line x1="6" y1="6" x2="22" y2="6" stroke-width="1.5" stroke-linecap="round" fill="none"/><polygon points="2,6 8,2 8,10" stroke="none"/></svg>
-            </button>
-            <button class="arrow-dir-btn" data-value="both" title="両方">
-              <svg viewBox="0 0 24 12"><line x1="6" y1="6" x2="18" y2="6" stroke-width="1.5" stroke-linecap="round" fill="none"/><polygon points="22,6 16,2 16,10" stroke="none"/><polygon points="2,6 8,2 8,10" stroke="none"/></svg>
-            </button>
+      <div class="bend-row" id="editBendRow">
+        <div class="bend-top">
+          <label>Break Point</label>
+          <div class="bend-input">
+            <input type="number" id="editBendPositionInput" min="5" max="95" value="50" />
+            <span class="unit">%</span>
           </div>
         </div>
-      </div>
-      <div style="margin-top: 8px;">
-        <div class="option-group">
-          <label>ラベル</label>
-          <input type="text" class="label-input" id="editLabelInput" placeholder="テキストを入力..." />
-        </div>
+        <input type="range" class="custom-slider" id="editBendPosition" min="5" max="95" value="50" />
       </div>
     </div>
 
-    <button class="btn btn-primary" id="updateBtn">スタイルを更新</button>
+    <div class="section">
+      <div class="section-title">Label</div>
+      <input type="text" class="label-input" id="editLabelInput" placeholder="Input Text" />
+    </div>
+
+    <div class="divider"></div>
     <div class="btn-row">
-      <button class="btn btn-outline" id="refreshBtn">位置を更新</button>
-      <button class="btn btn-danger" id="deleteBtn">削除</button>
+      <button class="btn btn-outline" id="refreshBtn">Reset Position</button>
+      <button class="btn btn-primary" id="updateBtn">Update Style</button>
     </div>
   </div>
 
   <script>
-    // ---- Point Picker Component ----
-    // 9 positions: 4 corners + 4 edge midpoints + auto
-    const POSITIONS = {
-      'top-left':     { left: 12, top: 8 },
-      'top':          { left: 36, top: 8 },
-      'top-right':    { left: 60, top: 8 },
-      'left':         { left: 12, top: 26 },
-      'right':        { left: 60, top: 26 },
-      'bottom-left':  { left: 12, top: 44 },
-      'bottom':       { left: 36, top: 44 },
-      'bottom-right': { left: 60, top: 44 },
+    // ---- Inline Point Picker ----
+    const PP_POSITIONS = {
+      'top-left':     { left: 2, top: 2 },
+      'top':          { left: 12.5, top: 2 },
+      'top-right':    { left: 23, top: 2 },
+      'left':         { left: 2, top: 12.5 },
+      'right':        { left: 23, top: 12.5 },
+      'bottom-left':  { left: 2, top: 23 },
+      'bottom':       { left: 12.5, top: 23 },
+      'bottom-right': { left: 23, top: 23 },
     };
 
-    function createPointPicker(containerId, autoBtnId, accentColor) {
-      const container = document.getElementById(containerId);
-      const autoBtn = document.getElementById(autoBtnId);
+    function createInlinePicker(container) {
+      const wrap = document.createElement('div');
+      wrap.className = 'pp-inline auto-mode';
 
       const rect = document.createElement('div');
       rect.className = 'pp-rect';
-      container.appendChild(rect);
+      wrap.appendChild(rect);
 
       let selectedValue = 'auto';
       let onChangeCb = null;
       const dots = {};
 
-      for (const [pos, coords] of Object.entries(POSITIONS)) {
+      for (const [pos, coords] of Object.entries(PP_POSITIONS)) {
         const dot = document.createElement('div');
         dot.className = 'pp-dot';
         dot.style.left = coords.left + 'px';
         dot.style.top = coords.top + 'px';
         dot.title = pos;
-        dot.addEventListener('click', () => {
-          selectedValue = pos;
+        dot.addEventListener('click', (e) => {
+          e.stopPropagation();
+          selectedValue = selectedValue === pos ? 'auto' : pos;
           updateVisuals();
           if (onChangeCb) onChangeCb();
         });
-        container.appendChild(dot);
+        wrap.appendChild(dot);
         dots[pos] = dot;
       }
 
-      autoBtn.addEventListener('click', () => {
-        selectedValue = 'auto';
-        updateVisuals();
-        if (onChangeCb) onChangeCb();
-      });
-
       function updateVisuals() {
-        // Clear all
         for (const d of Object.values(dots)) {
           d.classList.remove('active');
-          d.style.borderColor = '';
-          d.style.background = '';
-          d.style.boxShadow = '';
         }
-        autoBtn.classList.remove('active');
-        autoBtn.style.background = '';
-        autoBtn.style.borderColor = '';
-        autoBtn.style.color = '';
-
         if (selectedValue === 'auto') {
-          autoBtn.classList.add('active');
-          autoBtn.style.background = accentColor;
-          autoBtn.style.borderColor = accentColor;
-          autoBtn.style.color = '#fff';
+          wrap.classList.add('auto-mode');
         } else {
-          const activeDot = dots[selectedValue];
-          if (activeDot) {
-            activeDot.classList.add('active');
-            activeDot.style.background = accentColor;
-            activeDot.style.borderColor = accentColor;
-            activeDot.style.boxShadow = '0 0 0 2px ' + accentColor + '40';
-          }
+          wrap.classList.remove('auto-mode');
+          if (dots[selectedValue]) dots[selectedValue].classList.add('active');
         }
-      }
-
-      function getValue() {
-        return selectedValue;
-      }
-
-      function setValue(val) {
-        selectedValue = val || 'auto';
-        updateVisuals();
       }
 
       updateVisuals();
+      container.appendChild(wrap);
+
       return {
-        getValue,
-        setValue,
+        getValue() { return selectedValue; },
+        setValue(val) { selectedValue = val || 'auto'; updateVisuals(); },
         onChange(cb) { onChangeCb = cb; },
+        element: wrap,
       };
     }
 
-    // Initialize 4 pickers
-    const startPicker = createPointPicker('startPicker', 'startAutoBtn', '#1f1f1f');
-    const endPicker = createPointPicker('endPicker', 'endAutoBtn', '#888888');
-    const editStartPicker = createPointPicker('editStartPicker', 'editStartAutoBtn', '#1f1f1f');
-    const editEndPicker = createPointPicker('editEndPicker', 'editEndAutoBtn', '#888888');
+    // Picker instances (created dynamically when frames appear)
+    let startPicker = null;
+    let endPicker = null;
+    let editStartPicker = null;
+    let editEndPicker = null;
 
     // ---- Main Logic ----
     let frames = [];
@@ -798,30 +831,28 @@
 
     const createMode = document.getElementById('createMode');
     const editMode = document.getElementById('editMode');
-
     const frameList = document.getElementById('frameList');
     const connectBtn = document.getElementById('connectBtn');
     const hint = document.getElementById('hint');
     const strokeWeight = document.getElementById('strokeWeight');
-    const weightValue = document.getElementById('weightValue');
-    // 折れ位置スライダー
+    const editStrokeWeight = document.getElementById('editStrokeWeight');
+    const editFrameList = document.getElementById('editFrameList');
+
+    // Bend slider sync
     const bendPosition = document.getElementById('bendPosition');
-    const bendValue = document.getElementById('bendValue');
+    const bendPositionInput = document.getElementById('bendPositionInput');
     const bendRow = document.getElementById('bendRow');
     const editBendPosition = document.getElementById('editBendPosition');
-    const editBendValue = document.getElementById('editBendValue');
+    const editBendPositionInput = document.getElementById('editBendPositionInput');
     const editBendRow = document.getElementById('editBendRow');
 
-    bendPosition.addEventListener('input', () => {
-      bendValue.textContent = bendPosition.value + '%';
-    });
-    editBendPosition.addEventListener('input', () => {
-      editBendValue.textContent = editBendPosition.value + '%';
-    });
+    bendPosition.addEventListener('input', () => { bendPositionInput.value = bendPosition.value; });
+    bendPositionInput.addEventListener('change', () => { bendPosition.value = bendPositionInput.value; });
+    editBendPosition.addEventListener('input', () => { editBendPositionInput.value = editBendPosition.value; });
+    editBendPositionInput.addEventListener('change', () => { editBendPosition.value = editBendPositionInput.value; });
 
-    // カーブトグルと折れ位置の連動
     function updateBendVisibility(curvedCheckbox, row) {
-      row.style.display = curvedCheckbox.checked ? 'none' : 'flex';
+      row.style.display = curvedCheckbox.checked ? 'none' : '';
     }
     document.getElementById('curved').addEventListener('change', function() {
       updateBendVisibility(this, bendRow);
@@ -829,179 +860,123 @@
     document.getElementById('editCurved').addEventListener('change', function() {
       updateBendVisibility(this, editBendRow);
     });
-    // 初期状態
     updateBendVisibility(document.getElementById('curved'), bendRow);
 
-    const editFrameList = document.getElementById('editFrameList');
-    const editStrokeWeight = document.getElementById('editStrokeWeight');
-    const editWeightValue = document.getElementById('editWeightValue');
-    strokeWeight.addEventListener('input', () => {
-      weightValue.textContent = strokeWeight.value + 'px';
-    });
-    editStrokeWeight.addEventListener('input', () => {
-      editWeightValue.textContent = editStrokeWeight.value + 'px';
-    });
-
-    // ---- Color picker + swatch sync ----
+    // ---- Color ----
     const colorPicker = document.getElementById('colorPicker');
     const colorHex = document.getElementById('colorHex');
+    const colorSwatch = document.getElementById('colorSwatch');
     const editColorPicker = document.getElementById('editColorPicker');
     const editColorHex = document.getElementById('editColorHex');
+    const editColorSwatch = document.getElementById('editColorSwatch');
 
-    colorPicker.addEventListener('input', () => {
-      colorHex.textContent = colorPicker.value;
-      clearSwatchActive('swatchPanel');
-    });
-    editColorPicker.addEventListener('input', () => {
-      editColorHex.textContent = editColorPicker.value;
-      clearSwatchActive('editSwatchPanel');
-    });
-
-    function clearSwatchActive(panelId) {
-      document.querySelectorAll('#' + panelId + ' .swatch').forEach(s => s.classList.remove('active'));
+    function updateColorDisplay(picker, hex, swatch) {
+      hex.textContent = picker.value.replace('#', '');
+      swatch.style.background = picker.value;
     }
+    colorPicker.addEventListener('input', () => updateColorDisplay(colorPicker, colorHex, colorSwatch));
+    editColorPicker.addEventListener('input', () => updateColorDisplay(editColorPicker, editColorHex, editColorSwatch));
 
-    function setColor(pickerId, hexId, hex, panelId) {
-      document.getElementById(pickerId).value = hex;
-      document.getElementById(hexId).textContent = hex;
-      clearSwatchActive(panelId);
-    }
+    colorSwatch.addEventListener('click', () => colorPicker.click());
+    editColorSwatch.addEventListener('click', () => editColorPicker.click());
 
+    // ---- Style/Variable dropdown ----
     let allSwatches = [];
+    let activeTab = 'styles';
 
-    function renderSwatchPanel(panelId, pickerId, hexId) {
-      const panel = document.getElementById(panelId);
-      panel.innerHTML = '';
+    function setupDropdown(selectId, dropdownId, tabsId, listId, pickerId, hexId, swatchId) {
+      const select = document.getElementById(selectId);
+      const dropdown = document.getElementById(dropdownId);
+      const tabs = document.getElementById(tabsId);
+      const list = document.getElementById(listId);
+      let currentTab = 'styles';
 
-      if (allSwatches.length === 0) {
-        panel.innerHTML = '<div class="no-swatches">スタイル/バリアブルなし</div>';
-        return;
-      }
+      select.addEventListener('click', (e) => {
+        e.stopPropagation();
+        // Close other dropdowns
+        document.querySelectorAll('.swatch-dropdown').forEach(d => {
+          if (d !== dropdown) d.classList.remove('open');
+        });
+        dropdown.classList.toggle('open');
+        if (dropdown.classList.contains('open')) renderList();
+      });
 
-      const groups = {};
-      for (const s of allSwatches) {
-        if (!groups[s.group]) groups[s.group] = [];
-        groups[s.group].push(s);
-      }
+      tabs.addEventListener('click', (e) => {
+        const tab = e.target.closest('.swatch-dropdown-tab');
+        if (!tab) return;
+        e.stopPropagation();
+        currentTab = tab.dataset.tab;
+        tabs.querySelectorAll('.swatch-dropdown-tab').forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        renderList();
+      });
 
-      const groupLabels = { styles: 'カラースタイル', variables: 'バリアブル' };
-
-      for (const [group, items] of Object.entries(groups)) {
-        const label = document.createElement('div');
-        label.className = 'swatch-group-label';
-        label.textContent = groupLabels[group] || group;
-        panel.appendChild(label);
-
-        const grid = document.createElement('div');
-        grid.className = 'swatch-grid';
-
-        for (const item of items) {
-          const swatch = document.createElement('div');
-          swatch.className = 'swatch';
-          swatch.style.background = item.hex;
-          swatch.title = item.name;
-          swatch.addEventListener('click', () => {
-            setColor(pickerId, hexId, item.hex, panelId);
-            grid.querySelectorAll('.swatch').forEach(s => s.classList.remove('active'));
-            panel.querySelectorAll('.swatch').forEach(s => s.classList.remove('active'));
-            swatch.classList.add('active');
-          });
-          grid.appendChild(swatch);
+      function renderList() {
+        list.innerHTML = '';
+        const items = allSwatches.filter(s => s.group === currentTab);
+        if (items.length === 0) {
+          list.innerHTML = '<div style="padding:12px;text-align:center;color:var(--c-text3);font-size:11px;">No items</div>';
+          return;
         }
-        panel.appendChild(grid);
+        for (const item of items) {
+          const el = document.createElement('div');
+          el.className = 'swatch-dropdown-item';
+          el.innerHTML = `
+            <div class="sdi-color" style="background:${item.hex}"></div>
+            <div class="sdi-info">
+              <div class="sdi-name">${item.name}</div>
+              <div class="sdi-hex">${item.hex}</div>
+            </div>`;
+          el.addEventListener('click', (e) => {
+            e.stopPropagation();
+            document.getElementById(pickerId).value = item.hex;
+            document.getElementById(hexId).textContent = item.hex.replace('#', '');
+            document.getElementById(swatchId).style.background = item.hex;
+            dropdown.classList.remove('open');
+          });
+          list.appendChild(el);
+        }
       }
     }
 
-    window.onmessage = (event) => {
-      const msg = event.data.pluginMessage;
+    setupDropdown('styleSelect', 'swatchDropdown', 'swatchTabs', 'swatchList', 'colorPicker', 'colorHex', 'colorSwatch');
+    setupDropdown('editStyleSelect', 'editSwatchDropdown', 'editSwatchTabs', 'editSwatchList', 'editColorPicker', 'editColorHex', 'editColorSwatch');
 
-      if (msg.type === 'color-swatches') {
-        allSwatches = msg.swatches;
-        renderSwatchPanel('swatchPanel', 'colorPicker', 'colorHex');
-        renderSwatchPanel('editSwatchPanel', 'editColorPicker', 'editColorHex');
-      }
+    // Close dropdowns on outside click
+    document.addEventListener('click', () => {
+      document.querySelectorAll('.swatch-dropdown').forEach(d => d.classList.remove('open'));
+    });
 
-      if (msg.type === 'selection-update') {
-        frames = msg.frames;
-        currentArrowId = null;
-        createMode.style.display = 'block';
-        editMode.style.display = 'none';
-        updateCreateUI();
-      }
-
-      if (msg.type === 'edit-arrow') {
-        currentArrowId = msg.arrowId;
-        createMode.style.display = 'none';
-        editMode.style.display = 'block';
-
-        editFrameList.innerHTML = `
-          <div class="frame-item">
-            <div class="icon" style="background: ${msg.sourceExists ? '#1f1f1f' : '#ccc'}"></div>
-            <span class="name">${msg.sourceName}</span>
-            <span class="badge" style="background: #1f1f1f">始点</span>
-          </div>
-          <div class="frame-item">
-            <div class="icon" style="background: ${msg.targetExists ? '#888888' : '#ccc'}"></div>
-            <span class="name">${msg.targetName}</span>
-            <span class="badge" style="background: #888888">終点</span>
-          </div>`;
-
-        const opts = msg.options;
-        document.getElementById('editColorPicker').value = opts.color;
-        document.getElementById('editColorHex').textContent = opts.color;
-        editStrokeWeight.value = opts.strokeWeight;
-        editWeightValue.textContent = opts.strokeWeight + 'px';
-        document.getElementById('editCurved').checked = opts.curved;
-        document.getElementById('editDashed').checked = opts.dashed;
-
-        editStartPicker.setValue(opts.startSide || 'auto');
-        editEndPicker.setValue(opts.endSide || 'auto');
-        document.getElementById('editLabelInput').value = opts.label || '';
-
-        // 矢印方向を復元
-        if (opts.startArrow && opts.endArrow) arrowDirEdit.setValue('both');
-        else if (opts.startArrow) arrowDirEdit.setValue('start');
-        else if (opts.endArrow !== false) arrowDirEdit.setValue('end');
-        else arrowDirEdit.setValue('none');
-
-        const bp = Math.round((opts.bendPosition ?? 0.5) * 100);
-        editBendPosition.value = bp;
-        editBendValue.textContent = bp + '%';
-        updateBendVisibility(document.getElementById('editCurved'), editBendRow);
-      }
-    };
-
-    function updateCreateUI() {
-      if (frames.length === 0) {
-        frameList.innerHTML = '<div class="empty-state">2つのフレームを選択してください</div>';
-        connectBtn.disabled = true;
-        hint.textContent = '2つのフレームを選択すると接続できます';
-      } else if (frames.length === 1) {
-        frameList.innerHTML = `
-          <div class="frame-item">
-            <div class="icon" style="background: #1f1f1f"></div>
-            <span class="name">${frames[0].name}</span>
-            <span class="badge" style="background: #1f1f1f">始点</span>
-          </div>`;
-        connectBtn.disabled = true;
-        hint.textContent = 'もう1つフレームを選択してください';
-      } else {
-        frameList.innerHTML = frames.slice(0, 2).map((f, i) =>
-          `<div class="frame-item">
-            <div class="icon" style="background: ${i === 0 ? '#1f1f1f' : '#888888'}"></div>
-            <span class="name">${f.name}</span>
-            <span class="badge" style="background: ${i === 0 ? '#1f1f1f' : '#888888'}">${i === 0 ? '始点' : '終点'}</span>
-          </div>`
-        ).join('');
-        hint.textContent = frames.length > 2 ? '最初の2つのフレームが接続されます' : '';
-        connectBtn.disabled = false;
-      }
+    // Render flat swatch grids
+    function renderSwatchGrids() {
+      ['swatchGrid', 'editSwatchGrid'].forEach((gridId, idx) => {
+        const grid = document.getElementById(gridId);
+        const pickerId = idx === 0 ? 'colorPicker' : 'editColorPicker';
+        const hexId = idx === 0 ? 'colorHex' : 'editColorHex';
+        const swatchId = idx === 0 ? 'colorSwatch' : 'editColorSwatch';
+        grid.innerHTML = '';
+        if (allSwatches.length === 0) {
+          grid.innerHTML = '<span class="no-swatches">No styles/variables</span>';
+          return;
+        }
+        for (const item of allSwatches) {
+          const sw = document.createElement('div');
+          sw.className = 'swatch';
+          sw.style.background = item.hex;
+          sw.title = item.name;
+          sw.addEventListener('click', () => {
+            document.getElementById(pickerId).value = item.hex;
+            document.getElementById(hexId).textContent = item.hex.replace('#', '');
+            document.getElementById(swatchId).style.background = item.hex;
+            grid.querySelectorAll('.swatch').forEach(s => s.classList.remove('active'));
+            sw.classList.add('active');
+          });
+          grid.appendChild(sw);
+        }
+      });
     }
 
-    // ---- 設定の保存/復元 ----
-    const STORAGE_KEY = 'arrow-connector-prefs';
-
-    // ---- 矢印方向セレクター ----
+    // ---- Arrow direction selector ----
     function initArrowDirSelector(containerId) {
       const container = document.getElementById(containerId);
       const btns = container.querySelectorAll('.arrow-dir-btn');
@@ -1023,10 +998,7 @@
         },
         getArrows() {
           const v = this.getValue();
-          return {
-            startArrow: v === 'start' || v === 'both',
-            endArrow: v === 'end' || v === 'both',
-          };
+          return { startArrow: v === 'start' || v === 'both', endArrow: v === 'end' || v === 'both' };
         },
       };
     }
@@ -1034,14 +1006,128 @@
     const arrowDirCreate = initArrowDirSelector('arrowDir');
     const arrowDirEdit = initArrowDirSelector('editArrowDir');
 
+    // ---- Messages from plugin ----
+    window.onmessage = (event) => {
+      const msg = event.data.pluginMessage;
+
+      if (msg.type === 'color-swatches') {
+        allSwatches = msg.swatches;
+        renderSwatchGrids();
+      }
+
+      if (msg.type === 'selection-update') {
+        frames = msg.frames;
+        currentArrowId = null;
+        createMode.style.display = 'block';
+        editMode.style.display = 'none';
+        updateCreateUI();
+      }
+
+      if (msg.type === 'edit-arrow') {
+        currentArrowId = msg.arrowId;
+        createMode.style.display = 'none';
+        editMode.style.display = 'block';
+
+        // Build edit frame list with inline pickers
+        editFrameList.innerHTML = '';
+        const items = [
+          { name: msg.sourceName, exists: msg.sourceExists, color: '#4D7BF3' },
+          { name: msg.targetName, exists: msg.targetExists, color: '#56B87B' },
+        ];
+        const pickerContainers = [];
+        items.forEach((item, i) => {
+          const fi = document.createElement('div');
+          fi.className = 'frame-item';
+          fi.innerHTML = `
+            <div class="dot" style="background:${item.exists ? item.color : '#ccc'}"></div>
+            <span class="name">${item.name}</span>`;
+          const pickerHost = document.createElement('span');
+          fi.appendChild(pickerHost);
+          editFrameList.appendChild(fi);
+          pickerContainers.push(pickerHost);
+        });
+        editStartPicker = createInlinePicker(pickerContainers[0]);
+        editEndPicker = createInlinePicker(pickerContainers[1]);
+
+        const opts = msg.options;
+        document.getElementById('editColorPicker').value = opts.color;
+        document.getElementById('editColorHex').textContent = opts.color.replace('#', '');
+        document.getElementById('editColorSwatch').style.background = opts.color;
+        editStrokeWeight.value = opts.strokeWeight;
+        document.getElementById('editCurved').checked = opts.curved;
+        document.getElementById('editDashed').checked = opts.dashed;
+
+        editStartPicker.setValue(opts.startSide || 'auto');
+        editEndPicker.setValue(opts.endSide || 'auto');
+        document.getElementById('editLabelInput').value = opts.label || '';
+
+        if (opts.startArrow && opts.endArrow) arrowDirEdit.setValue('both');
+        else if (opts.startArrow) arrowDirEdit.setValue('start');
+        else if (opts.endArrow !== false) arrowDirEdit.setValue('end');
+        else arrowDirEdit.setValue('none');
+
+        const bp = Math.round((opts.bendPosition ?? 0.5) * 100);
+        editBendPosition.value = bp;
+        editBendPositionInput.value = bp;
+        updateBendVisibility(document.getElementById('editCurved'), editBendRow);
+      }
+    };
+
+    function updateCreateUI() {
+      frameList.innerHTML = '';
+      if (frames.length === 0) {
+        frameList.innerHTML = '<div class="empty-state">Select 2 frames</div>';
+        connectBtn.disabled = true;
+        hint.textContent = 'Select 2 frames to connect';
+        return;
+      }
+
+      const colors = ['#4D7BF3', '#56B87B'];
+      const displayFrames = frames.slice(0, 2);
+      const pickerContainers = [];
+
+      displayFrames.forEach((f, i) => {
+        const fi = document.createElement('div');
+        fi.className = 'frame-item';
+        fi.innerHTML = `
+          <div class="dot" style="background:${colors[i] || colors[0]}"></div>
+          <span class="name">${f.name}</span>`;
+        const pickerHost = document.createElement('span');
+        fi.appendChild(pickerHost);
+        frameList.appendChild(fi);
+        pickerContainers.push(pickerHost);
+      });
+
+      // Recreate pickers, preserve values if possible
+      const oldStartVal = startPicker ? startPicker.getValue() : 'auto';
+      const oldEndVal = endPicker ? endPicker.getValue() : 'auto';
+      startPicker = createInlinePicker(pickerContainers[0]);
+      startPicker.setValue(oldStartVal);
+      if (pickerContainers[1]) {
+        endPicker = createInlinePicker(pickerContainers[1]);
+        endPicker.setValue(oldEndVal);
+      }
+
+      if (frames.length === 1) {
+        connectBtn.disabled = true;
+        hint.textContent = 'Select 1 more frame';
+      } else {
+        connectBtn.disabled = false;
+        hint.textContent = frames.length > 2 ? 'First 2 frames will be connected' : '';
+      }
+    }
+
+    // ---- Preferences ----
+    const STORAGE_KEY = 'arrow-connector-prefs';
+
     function savePrefs() {
       const prefs = {
         color: document.getElementById('colorPicker').value,
         strokeWeight: parseInt(strokeWeight.value),
         curved: document.getElementById('curved').checked,
         dashed: document.getElementById('dashed').checked,
-        startSide: startPicker.getValue(),
-        endSide: endPicker.getValue(),
+        startSide: startPicker ? startPicker.getValue() : 'auto',
+        endSide: endPicker ? endPicker.getValue() : 'auto',
         arrowDirValue: arrowDirCreate.getValue(),
         bendPosition: parseInt(bendPosition.value),
       };
@@ -1055,29 +1141,23 @@
         const p = JSON.parse(raw);
         if (p.color) {
           document.getElementById('colorPicker').value = p.color;
-          colorHex.textContent = p.color;
+          colorHex.textContent = p.color.replace('#', '');
+          colorSwatch.style.background = p.color;
         }
-        if (p.strokeWeight) {
-          strokeWeight.value = p.strokeWeight;
-          weightValue.textContent = p.strokeWeight + 'px';
-        }
-        if (typeof p.curved === 'boolean') {
-          document.getElementById('curved').checked = p.curved;
-        }
-        if (typeof p.dashed === 'boolean') {
-          document.getElementById('dashed').checked = p.dashed;
-        }
-        if (p.startSide !== undefined) startPicker.setValue(p.startSide);
-        if (p.endSide !== undefined) endPicker.setValue(p.endSide);
+        if (p.strokeWeight) { strokeWeight.value = p.strokeWeight; }
+        if (typeof p.curved === 'boolean') { document.getElementById('curved').checked = p.curved; }
+        if (typeof p.dashed === 'boolean') { document.getElementById('dashed').checked = p.dashed; }
         if (p.arrowDirValue !== undefined) arrowDirCreate.setValue(p.arrowDirValue);
         if (p.bendPosition !== undefined) {
           bendPosition.value = p.bendPosition;
-          bendValue.textContent = p.bendPosition + '%';
+          bendPositionInput.value = p.bendPosition;
         }
         updateBendVisibility(document.getElementById('curved'), bendRow);
+        // startSide/endSide restored when pickers are created in updateCreateUI
+        window._savedStartSide = p.startSide;
+        window._savedEndSide = p.endSide;
       } catch {}
     }
-
     loadPrefs();
 
     function getCreateOptions() {
@@ -1087,8 +1167,8 @@
         strokeWeight: parseInt(strokeWeight.value),
         curved: document.getElementById('curved').checked,
         dashed: document.getElementById('dashed').checked,
-        startSide: startPicker.getValue(),
-        endSide: endPicker.getValue(),
+        startSide: startPicker ? startPicker.getValue() : 'auto',
+        endSide: endPicker ? endPicker.getValue() : 'auto',
         label: document.getElementById('labelInput').value,
         startArrow: arrows.startArrow,
         endArrow: arrows.endArrow,
@@ -1105,102 +1185,67 @@
         strokeWeight: parseInt(editStrokeWeight.value),
         curved: document.getElementById('editCurved').checked,
         dashed: document.getElementById('editDashed').checked,
-        startSide: editStartPicker.getValue(),
-        endSide: editEndPicker.getValue(),
+        startSide: editStartPicker ? editStartPicker.getValue() : 'auto',
+        endSide: editEndPicker ? editEndPicker.getValue() : 'auto',
         label: document.getElementById('editLabelInput').value,
         startArrow: arrows.startArrow,
         endArrow: arrows.endArrow,
         bendPosition: parseInt(editBendPosition.value) / 100,
       };
-
-      // 編集モードの値を新規作成モードに同期して保存
+      // Sync to create mode
       document.getElementById('colorPicker').value = opts.color;
-      colorHex.textContent = opts.color;
+      colorHex.textContent = opts.color.replace('#', '');
+      colorSwatch.style.background = opts.color;
       strokeWeight.value = opts.strokeWeight;
-      weightValue.textContent = opts.strokeWeight + 'px';
       document.getElementById('curved').checked = opts.curved;
       document.getElementById('dashed').checked = opts.dashed;
       bendPosition.value = Math.round(opts.bendPosition * 100);
-      bendValue.textContent = Math.round(opts.bendPosition * 100) + '%';
+      bendPositionInput.value = Math.round(opts.bendPosition * 100);
       arrowDirCreate.setValue(arrowDirEdit.getValue());
       updateBendVisibility(document.getElementById('curved'), bendRow);
       savePrefs();
-
       return opts;
     }
 
-    // 始点と終点を入れ替え（新規作成）
+    // ---- Swap ----
     document.getElementById('swapBtn').addEventListener('click', () => {
       if (frames.length >= 2) {
-        const tmp = frames[0];
-        frames[0] = frames[1];
-        frames[1] = tmp;
-        // ポイントピッカーも入れ替え
-        const sv = startPicker.getValue();
-        const ev = endPicker.getValue();
-        startPicker.setValue(ev);
-        endPicker.setValue(sv);
+        [frames[0], frames[1]] = [frames[1], frames[0]];
+        const sv = startPicker ? startPicker.getValue() : 'auto';
+        const ev = endPicker ? endPicker.getValue() : 'auto';
         updateCreateUI();
+        if (startPicker) startPicker.setValue(ev);
+        if (endPicker) endPicker.setValue(sv);
       }
     });
 
-    // 始点と終点を入れ替え（編集）
     document.getElementById('editSwapBtn').addEventListener('click', () => {
       if (!currentArrowId) return;
-      // ポイントピッカーも入れ替え
-      const sv = editStartPicker.getValue();
-      const ev = editEndPicker.getValue();
-      editStartPicker.setValue(ev);
-      editEndPicker.setValue(sv);
-      // swap メッセージを送信
+      const sv = editStartPicker ? editStartPicker.getValue() : 'auto';
+      const ev = editEndPicker ? editEndPicker.getValue() : 'auto';
+      if (editStartPicker) editStartPicker.setValue(ev);
+      if (editEndPicker) editEndPicker.setValue(sv);
       const opts = getEditOptions();
-      parent.postMessage({ pluginMessage: {
-        type: 'swap-arrow',
-        arrowId: currentArrowId,
-        ...opts,
-      }}, '*');
+      parent.postMessage({ pluginMessage: { type: 'swap-arrow', arrowId: currentArrowId, ...opts } }, '*');
     });
 
+    // ---- Actions ----
     connectBtn.addEventListener('click', () => {
       if (frames.length < 2) return;
       const opts = getCreateOptions();
-      parent.postMessage({ pluginMessage: {
-        type: 'connect',
-        sourceId: frames[0].id,
-        targetId: frames[1].id,
-        ...opts,
-      }}, '*');
+      parent.postMessage({ pluginMessage: { type: 'connect', sourceId: frames[0].id, targetId: frames[1].id, ...opts } }, '*');
     });
 
     document.getElementById('updateBtn').addEventListener('click', () => {
       if (!currentArrowId) return;
       const opts = getEditOptions();
-      parent.postMessage({ pluginMessage: {
-        type: 'update-arrow',
-        arrowId: currentArrowId,
-        ...opts,
-      }}, '*');
+      parent.postMessage({ pluginMessage: { type: 'update-arrow', arrowId: currentArrowId, ...opts } }, '*');
     });
 
     document.getElementById('refreshBtn').addEventListener('click', () => {
       if (!currentArrowId) return;
-      const opts = getEditOptions();
-      parent.postMessage({ pluginMessage: {
-        type: 'update-arrow',
-        arrowId: currentArrowId,
-        ...opts,
-      }}, '*');
+      parent.postMessage({ pluginMessage: { type: 'refresh-position', arrowId: currentArrowId } }, '*');
     });
-
-    document.getElementById('deleteBtn').addEventListener('click', () => {
-      if (!currentArrowId) return;
-      parent.postMessage({ pluginMessage: {
-        type: 'delete-arrow',
-        arrowId: currentArrowId,
-      }}, '*');
-      currentArrowId = null;
-    });
-
   </script>
 </body>
 </html>
