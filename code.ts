@@ -2,7 +2,7 @@
 
 const isRelaunch = figma.command === "refresh-all";
 
-figma.showUI(__html__, { width: 380, height: 620, themeColors: true });
+figma.showUI(__html__, { width: 460, height: 745, themeColors: true });
 
 const PLUGIN_DATA_KEY = "arrow-connector-data";
 
@@ -624,6 +624,20 @@ function isConnectable(n: SceneNode): boolean {
   );
 }
 
+// 2フレーム間の既存矢印を検索（どちら向きでもマッチ）
+function findExistingArrow(idA: string, idB: string): SceneNode | null {
+  for (const node of figma.currentPage.children) {
+    const data = getArrowData(node);
+    if (data) {
+      if ((data.sourceId === idA && data.targetId === idB) ||
+          (data.sourceId === idB && data.targetId === idA)) {
+        return node;
+      }
+    }
+  }
+  return null;
+}
+
 // 選択状態をUIに送信
 function sendSelectionState() {
   const selection = figma.currentPage.selection;
@@ -649,9 +663,41 @@ function sendSelectionState() {
 
   // 通常のフレーム選択
   const frames = selection.filter(isConnectable);
+
+  // 2フレーム選択時: 既存の矢印があればedit-arrowモードに切り替え
+  if (frames.length >= 2) {
+    const existingArrow = findExistingArrow(frames[0].id, frames[1].id);
+    if (existingArrow) {
+      const data = getArrowData(existingArrow)!;
+      const source = figma.getNodeById(data.sourceId);
+      const target = figma.getNodeById(data.targetId);
+      figma.ui.postMessage({
+        type: "edit-arrow",
+        arrowId: existingArrow.id,
+        sourceName: source ? source.name : "(削除済み)",
+        targetName: target ? target.name : "(削除済み)",
+        sourceExists: !!source,
+        targetExists: !!target,
+        options: data.options,
+      });
+      return;
+    }
+  }
+
+  // 2フレーム選択時は自動で最適な接続位置を計算して送る
+  let autoStartSide: Side = "auto";
+  let autoEndSide: Side = "auto";
+  if (frames.length >= 2) {
+    const { start, end } = findConnectionPoints(frames[0], frames[1], "auto", "auto");
+    autoStartSide = start.side;
+    autoEndSide = end.side;
+  }
+
   figma.ui.postMessage({
     type: "selection-update",
     frames: frames.map((f) => ({ id: f.id, name: f.name })),
+    autoStartSide,
+    autoEndSide,
   });
 }
 
@@ -756,14 +802,18 @@ figma.on("documentchange", (event) => {
       updateTimer = null;
 
       for (const arrowId of arrowIdsToUpdate) {
-        const arrowGroup = figma.getNodeById(arrowId) as GroupNode;
-        if (!arrowGroup) continue;
-        const data = getArrowData(arrowGroup);
-        if (!data) continue;
-        const source = figma.getNodeById(data.sourceId) as SceneNode;
-        const target = figma.getNodeById(data.targetId) as SceneNode;
-        if (!source || !target) continue;
-        await drawArrow(source, target, data.options, arrowGroup);
+        try {
+          const arrowGroup = figma.getNodeById(arrowId) as GroupNode;
+          if (!arrowGroup) continue;
+          const data = getArrowData(arrowGroup);
+          if (!data) continue;
+          const source = figma.getNodeById(data.sourceId) as SceneNode;
+          const target = figma.getNodeById(data.targetId) as SceneNode;
+          if (!source || !target) continue;
+          await drawArrow(source, target, data.options, arrowGroup);
+        } catch (e) {
+          console.error("Auto-update arrow failed:", e);
+        }
       }
 
       // インデックスを再構築
@@ -777,14 +827,18 @@ async function refreshAllArrows(): Promise<number> {
   let count = 0;
   const allNodes = figma.currentPage.children;
   for (const node of allNodes) {
-    const arrowData = getArrowData(node);
-    if (arrowData && node.type === "GROUP") {
-      const source = figma.getNodeById(arrowData.sourceId) as SceneNode;
-      const target = figma.getNodeById(arrowData.targetId) as SceneNode;
-      if (source && target) {
-        await drawArrow(source, target, arrowData.options, node);
-        count++;
+    try {
+      const arrowData = getArrowData(node);
+      if (arrowData && node.type === "GROUP") {
+        const source = figma.getNodeById(arrowData.sourceId) as SceneNode;
+        const target = figma.getNodeById(arrowData.targetId) as SceneNode;
+        if (source && target) {
+          await drawArrow(source, target, arrowData.options, node);
+          count++;
+        }
       }
+    } catch (e) {
+      console.error("refreshArrow failed for node:", node.id, e);
     }
   }
   arrowIndex = buildArrowIndex();
@@ -793,9 +847,14 @@ async function refreshAllArrows(): Promise<number> {
 
 // プラグイン起動時に全矢印を自動更新
 (async () => {
-  const count = await refreshAllArrows();
-  if (count > 0) {
-    figma.notify(`${count}本の矢印を更新しました`);
+  try {
+    const count = await refreshAllArrows();
+    if (count > 0) {
+      figma.notify(`${count}本の矢印を更新しました`);
+    }
+  } catch (e) {
+    console.error("refreshAllArrows failed:", e);
+    figma.notify("矢印の更新中にエラーが発生しました", { error: true });
   }
   if (isRelaunch) {
     figma.closePlugin();
@@ -804,6 +863,7 @@ async function refreshAllArrows(): Promise<number> {
 
 // UIからのメッセージ処理
 figma.ui.onmessage = async (msg) => {
+  try {
   if (msg.type === "connect") {
     const { sourceId, targetId, color, strokeWeight, curved, arrowSize, dashed, startSide, endSide, label } = msg;
 
@@ -933,5 +993,9 @@ figma.ui.onmessage = async (msg) => {
 
   if (msg.type === "cancel") {
     figma.closePlugin();
+  }
+  } catch (e) {
+    console.error("onmessage error:", e);
+    figma.notify("エラーが発生しました: " + (e instanceof Error ? e.message : String(e)), { error: true });
   }
 };
