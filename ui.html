@@ -321,7 +321,7 @@
       color: var(--c-text2);
     }
     .weight-box input {
-      width: 24px;
+      width: 32px;
       border: none;
       background: none;
       font-size: 11px;
@@ -594,7 +594,7 @@
           <label>Weight</label>
           <div class="weight-box">
             <span class="w-prefix">W</span>
-            <input type="number" id="strokeWeight" min="1" max="20" value="2" />
+            <input type="text" id="strokeWeight" inputmode="decimal" value="2" />
           </div>
         </div>
         <div class="toggle-field">
@@ -698,7 +698,7 @@
           <label>Weight</label>
           <div class="weight-box">
             <span class="w-prefix">W</span>
-            <input type="number" id="editStrokeWeight" min="1" max="20" value="2" />
+            <input type="text" id="editStrokeWeight" inputmode="decimal" value="2" />
           </div>
         </div>
         <div class="toggle-field">
@@ -749,11 +749,6 @@
       <input type="text" class="label-input" id="editLabelInput" placeholder="Input Text" />
     </div>
 
-    <div class="divider"></div>
-    <div class="btn-row">
-      <button class="btn btn-outline" id="refreshBtn">Reset Position</button>
-      <button class="btn btn-primary" id="updateBtn">Update Style</button>
-    </div>
   </div>
 
   <script>
@@ -842,6 +837,24 @@
     editBendPosition.addEventListener('input', () => { editBendInput.value = editBendPosition.value; updateSliderBg(editBendPosition); });
     editBendInput.addEventListener('change', () => { editBendPosition.value = editBendInput.value; updateSliderBg(editBendPosition); });
 
+    function bendKeydown(e) {
+      if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+        e.preventDefault();
+        const step = e.shiftKey ? 10 : 1;
+        let v = parseInt(e.target.value) || 50;
+        v = e.key === 'ArrowUp' ? v + step : v - step;
+        v = Math.max(5, Math.min(95, v));
+        e.target.value = v;
+        // スライダーも同期
+        const slider = e.target === bendInput ? bendPosition : editBendPosition;
+        slider.value = v;
+        updateSliderBg(slider);
+        e.target.dispatchEvent(new Event('input'));
+      }
+    }
+    bendInput.addEventListener('keydown', bendKeydown);
+    editBendInput.addEventListener('keydown', bendKeydown);
+
     function updateSliderBg(slider) {
       const pct = (slider.value - slider.min) / (slider.max - slider.min) * 100;
       slider.style.background = `linear-gradient(to right, #232324 0%, #232324 ${pct}%, #f0f0f0 ${pct}%, #f0f0f0 100%)`;
@@ -874,7 +887,7 @@
     // ---- Style dropdown ----
     let allSwatches = [];
 
-    function setupDD(selId, panelId, tabsId, listId, pickerId, hexId, swatchId) {
+    function setupDD(selId, panelId, tabsId, listId, pickerId, hexId, swatchId, isEdit) {
       const sel = document.getElementById(selId);
       const panel = document.getElementById(panelId);
       const tabs = document.getElementById(tabsId);
@@ -910,13 +923,14 @@
             document.getElementById(hexId).textContent = it.hex.replace('#','');
             document.getElementById(swatchId).style.background = it.hex;
             panel.classList.remove('open');
+            if (isEdit) sendEditUpdate();
           });
           list.appendChild(el);
         }
       }
     }
-    setupDD('styleSelect','dropdownPanel','ddTabs','ddList','colorPicker','colorHex','colorSwatch');
-    setupDD('editStyleSelect','editDropdownPanel','editDdTabs','editDdList','editColorPicker','editColorHex','editColorSwatch');
+    setupDD('styleSelect','dropdownPanel','ddTabs','ddList','colorPicker','colorHex','colorSwatch', false);
+    setupDD('editStyleSelect','editDropdownPanel','editDdTabs','editDdList','editColorPicker','editColorHex','editColorSwatch', true);
     document.addEventListener('click', () => { document.querySelectorAll('.dropdown-panel').forEach(d => d.classList.remove('open')); });
 
     let allPageSwatches = [];
@@ -938,6 +952,7 @@
             document.getElementById(pid).value = it.hex;
             document.getElementById(hid).textContent = it.hex.replace('#','');
             document.getElementById(sid).style.background = it.hex;
+            if (idx === 1) sendEditUpdate();
           });
           grid.appendChild(sw);
         }
@@ -1000,8 +1015,13 @@
           const ph = document.createElement('span');
           row.appendChild(ph);
           editFrameList.appendChild(row);
-          if (i === 0) editStartPicker = createInlinePicker(ph, item.c);
-          else editEndPicker = createInlinePicker(ph, item.c);
+          if (i === 0) {
+            editStartPicker = createInlinePicker(ph, item.c);
+            editStartPicker.onChange(sendEditUpdate);
+          } else {
+            editEndPicker = createInlinePicker(ph, item.c);
+            editEndPicker.onChange(sendEditUpdate);
+          }
         });
 
         const o = msg.options;
@@ -1062,7 +1082,7 @@
     function savePrefs() {
       const p = {
         color: colorPicker.value,
-        strokeWeight: parseInt(strokeWeight.value),
+        strokeWeight: parseFloat(strokeWeight.value),
         curved: document.getElementById('curved').checked,
         dashed: document.getElementById('dashed').checked,
         arrowDirValue: arrowDirCreate.getValue(),
@@ -1089,7 +1109,7 @@
     function getCreateOpts() {
       const a = arrowDirCreate.getArrows();
       const o = {
-        color: colorPicker.value, strokeWeight: parseInt(strokeWeight.value),
+        color: colorPicker.value, strokeWeight: parseFloat(strokeWeight.value),
         curved: document.getElementById('curved').checked, dashed: document.getElementById('dashed').checked,
         startSide: startPicker ? startPicker.getValue() : 'auto',
         endSide: endPicker ? endPicker.getValue() : 'auto',
@@ -1103,7 +1123,7 @@
     function getEditOpts() {
       const a = arrowDirEdit.getArrows();
       const o = {
-        color: editColorPicker.value, strokeWeight: parseInt(editStrokeWeight.value),
+        color: editColorPicker.value, strokeWeight: parseFloat(editStrokeWeight.value),
         curved: document.getElementById('editCurved').checked, dashed: document.getElementById('editDashed').checked,
         startSide: editStartPicker ? editStartPicker.getValue() : 'auto',
         endSide: editEndPicker ? editEndPicker.getValue() : 'auto',
@@ -1152,14 +1172,50 @@
       const o = getCreateOpts();
       parent.postMessage({ pluginMessage: { type: 'connect', sourceId: frames[0].id, targetId: frames[1].id, ...o } }, '*');
     });
-    document.getElementById('updateBtn').addEventListener('click', () => {
+    // ---- Edit mode: 即時反映 ----
+    let editDebounceTimer = null;
+    function sendEditUpdate() {
       if (!currentArrowId) return;
-      const o = getEditOpts();
-      parent.postMessage({ pluginMessage: { type: 'update-arrow', arrowId: currentArrowId, ...o } }, '*');
-    });
-    document.getElementById('refreshBtn').addEventListener('click', () => {
-      if (!currentArrowId) return;
-      parent.postMessage({ pluginMessage: { type: 'refresh-position', arrowId: currentArrowId } }, '*');
+      clearTimeout(editDebounceTimer);
+      editDebounceTimer = setTimeout(() => {
+        const o = getEditOpts();
+        parent.postMessage({ pluginMessage: { type: 'update-arrow', arrowId: currentArrowId, ...o } }, '*');
+      }, 80);
+    }
+    // strokeWeight バリデーション（0.5〜20、小数第1位まで）+ 上下キー対応
+    function clampWeight(input) {
+      let v = parseFloat(input.value);
+      if (isNaN(v) || v < 0.5) v = 0.5;
+      if (v > 20) v = 20;
+      v = Math.round(v * 10) / 10;
+      input.value = v;
+    }
+    function weightKeydown(e) {
+      if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+        e.preventDefault();
+        const step = e.shiftKey ? 1 : 0.1;
+        let v = parseFloat(e.target.value) || 1;
+        v = e.key === 'ArrowUp' ? v + step : v - step;
+        v = Math.round(Math.max(0.5, Math.min(20, v)) * 10) / 10;
+        e.target.value = v;
+        e.target.dispatchEvent(new Event('input'));
+      }
+    }
+    strokeWeight.addEventListener('blur', () => clampWeight(strokeWeight));
+    strokeWeight.addEventListener('keydown', weightKeydown);
+    editStrokeWeight.addEventListener('blur', () => clampWeight(editStrokeWeight));
+    editStrokeWeight.addEventListener('keydown', weightKeydown);
+
+    editColorPicker.addEventListener('input', sendEditUpdate);
+    editStrokeWeight.addEventListener('input', sendEditUpdate);
+    document.getElementById('editDashed').addEventListener('change', sendEditUpdate);
+    document.getElementById('editCurved').addEventListener('change', sendEditUpdate);
+    editBendPosition.addEventListener('input', sendEditUpdate);
+    editBendInput.addEventListener('change', sendEditUpdate);
+    document.getElementById('editLabelInput').addEventListener('input', sendEditUpdate);
+    // arrow dir buttons
+    document.getElementById('editArrowDir').addEventListener('click', (e) => {
+      if (e.target.closest('.arrow-dir-btn')) setTimeout(sendEditUpdate, 0);
     });
   </script>
 </body>

@@ -553,25 +553,6 @@ function sendSelectionState() {
     }
     // 通常のフレーム選択
     const frames = selection.filter(isConnectable);
-    // 2フレーム選択時: 既存の矢印があればedit-arrowモードに切り替え
-    if (frames.length >= 2) {
-        const existingArrow = findExistingArrow(frames[0].id, frames[1].id);
-        if (existingArrow) {
-            const data = getArrowData(existingArrow);
-            const source = figma.getNodeById(data.sourceId);
-            const target = figma.getNodeById(data.targetId);
-            figma.ui.postMessage({
-                type: "edit-arrow",
-                arrowId: existingArrow.id,
-                sourceName: source ? source.name : "(削除済み)",
-                targetName: target ? target.name : "(削除済み)",
-                sourceExists: !!source,
-                targetExists: !!target,
-                options: data.options,
-            });
-            return;
-        }
-    }
     // 2フレーム選択時は自動で最適な接続位置を計算して送る
     let autoStartSide = "auto";
     let autoEndSide = "auto";
@@ -719,6 +700,9 @@ figma.on("documentchange", (event) => {
             }
             pendingNodeIds.clear();
             updateTimer = null;
+            // 現在の選択を保持（再描画で古いグループが消えるため）
+            const selectedIds = new Set(figma.currentPage.selection.map(n => n.id));
+            const newSelection = [];
             for (const arrowId of arrowIdsToUpdate) {
                 try {
                     const arrowGroup = figma.getNodeById(arrowId);
@@ -731,11 +715,21 @@ figma.on("documentchange", (event) => {
                     const target = figma.getNodeById(data.targetId);
                     if (!source || !target)
                         continue;
-                    await drawArrow(source, target, data.options, arrowGroup);
+                    const wasSelected = selectedIds.has(arrowId);
+                    const newArrow = await drawArrow(source, target, data.options, arrowGroup);
+                    if (wasSelected) {
+                        newSelection.push(newArrow);
+                    }
                 }
                 catch (e) {
                     console.error("Auto-update arrow failed:", e);
                 }
+            }
+            // 再描画された矢印が選択されていた場合、新しいグループを選択し直す
+            if (newSelection.length > 0) {
+                // 元の選択から再描画されなかったノードも保持
+                const remainingSelection = figma.currentPage.selection.filter(n => !selectedIds.has(n.id) || !arrowIdsToUpdate.has(n.id));
+                figma.currentPage.selection = [...remainingSelection, ...newSelection];
             }
             // インデックスを再構築
             arrowIndex = buildArrowIndex();
