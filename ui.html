@@ -31,10 +31,10 @@
     /* ---- Section ---- */
     .section { margin-bottom: 16px; }
     .section-title {
-      font-size: 16px;
+      font-size: 13px;
       font-weight: 500;
       color: var(--c-text);
-      margin-bottom: 16px;
+      margin-bottom: 12px;
     }
 
     /* ---- Frame ---- */
@@ -91,7 +91,7 @@
       flex-shrink: 0;
     }
     .frame-item .name {
-      font-size: 12px;
+      font-size: 11px;
       font-weight: 500;
       color: var(--c-text);
       overflow: hidden;
@@ -107,28 +107,28 @@
       text-align: center;
     }
 
-    /* ---- Inline Point Picker 25x25 ---- */
+    /* ---- Inline Point Picker ---- */
     .pp-inline {
       position: relative;
-      width: 25px;
-      height: 25px;
+      width: 28px;
+      height: 28px;
       flex-shrink: 0;
     }
     .pp-inline .pp-rect {
       position: absolute;
-      top: 2px;
-      left: 2px;
-      width: 21px;
-      height: 21px;
+      top: 3px;
+      left: 3px;
+      width: 22px;
+      height: 22px;
       border: 1.5px solid var(--c-border);
       border-radius: 2px;
     }
     .pp-inline .pp-dot {
       position: absolute;
-      width: 5px;
-      height: 5px;
+      width: 7px;
+      height: 7px;
       border-radius: 50%;
-      border: 1px solid var(--c-border);
+      border: 1.5px solid var(--c-border);
       background: var(--c-white);
       cursor: pointer;
       transform: translate(-50%, -50%);
@@ -136,12 +136,11 @@
       z-index: 2;
     }
     .pp-inline .pp-dot:hover {
-      background: var(--c-text2);
+      transform: translate(-50%, -50%) scale(1.3);
       border-color: var(--c-text2);
     }
     .pp-inline .pp-dot.active {
-      background: var(--c-start);
-      border-color: var(--c-start);
+      border-color: transparent;
     }
 
     /* ---- Color ---- */
@@ -173,7 +172,7 @@
       pointer-events: none;
     }
     .color-input-box .hash {
-      font-size: 12px;
+      font-size: 11px;
       font-weight: 500;
       color: var(--c-text2);
     }
@@ -265,9 +264,9 @@
     .dd-item .dd-hex { font-size: 11px; color: var(--c-text3); }
 
     .swatch-section-label {
-      font-size: 12px;
+      font-size: 11px;
       color: var(--c-text2);
-      margin-bottom: 8px;
+      margin-bottom: 6px;
     }
     .swatch-grid-container {
       background: var(--c-bg2);
@@ -302,7 +301,7 @@
       padding: 3px 0;
     }
     .weight-row label {
-      font-size: 12px;
+      font-size: 11px;
       color: var(--c-text2);
     }
     .weight-box {
@@ -315,7 +314,7 @@
       width: 64px;
     }
     .weight-box .w-prefix {
-      font-size: 12px;
+      font-size: 11px;
       font-weight: 500;
       color: var(--c-text2);
     }
@@ -337,11 +336,11 @@
       gap: 4px;
     }
     .toggle-field .tf-label {
-      font-size: 12px;
+      font-size: 11px;
       color: var(--c-text2);
     }
     .toggle-field .tf-colon {
-      font-size: 12px;
+      font-size: 11px;
       color: var(--c-text2);
     }
     .toggle-mini {
@@ -438,7 +437,7 @@
       gap: 16px;
     }
     .bend-top label {
-      font-size: 12px;
+      font-size: 11px;
       color: var(--c-text2);
     }
     .bend-box {
@@ -461,7 +460,7 @@
     }
     .bend-box input::-webkit-inner-spin-button { -webkit-appearance: none; }
     .bend-box .unit {
-      font-size: 12px;
+      font-size: 11px;
       font-weight: 500;
       color: var(--c-text2);
     }
@@ -506,10 +505,10 @@
     /* ---- Buttons ---- */
     .btn {
       width: 100%;
-      padding: 14px;
+      padding: 12px;
       border: none;
       border-radius: 4px;
-      font-size: 13px;
+      font-size: 12px;
       font-weight: 500;
       font-family: inherit;
       cursor: pointer;
@@ -756,14 +755,14 @@
   <script>
     // ---- Inline Point Picker 25x25 ----
     const PP_POS = {
-      'top-left':    { left: 2, top: 2 },
-      'top':         { left: 12.5, top: 2 },
-      'top-right':   { left: 23, top: 2 },
-      'left':        { left: 2, top: 12.5 },
-      'right':       { left: 23, top: 12.5 },
-      'bottom-left': { left: 2, top: 23 },
-      'bottom':      { left: 12.5, top: 23 },
-      'bottom-right':{ left: 23, top: 23 },
+      'top-left':    { left: 3, top: 3 },
+      'top':         { left: 14, top: 3 },
+      'top-right':   { left: 25, top: 3 },
+      'left':        { left: 3, top: 14 },
+      'right':       { left: 25, top: 14 },
+      'bottom-left': { left: 3, top: 25 },
+      'bottom':      { left: 14, top: 25 },
+      'bottom-right':{ left: 25, top: 25 },
     };
 
     function createInlinePicker(container, accentColor) {
