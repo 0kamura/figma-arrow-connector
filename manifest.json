@@ -6,5 +6,12 @@
   "ui": "ui.html",
   "capabilities": [],
   "enableProposedApi": false,
-  "editorType": ["figma"]
+  "editorType": ["figma"],
+  "relaunchButtons": [
+    {
+      "command": "refresh-all",
+      "name": "矢印を更新",
+      "multipleSelection": true
+    }
+  ]
 }

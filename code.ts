@@ -1,5 +1,7 @@
 // Arrow Connector Plugin - FigJam風の矢印でFrameを繋ぐ
 
+const isRelaunch = figma.command === "refresh-all";
+
 figma.showUI(__html__, { width: 320, height: 520 });
 
 const PLUGIN_DATA_KEY = "arrow-connector-data";
@@ -699,6 +701,7 @@ async function drawArrow(
     options,
   };
   groupNode.setPluginData(PLUGIN_DATA_KEY, JSON.stringify(arrowData));
+  groupNode.setRelaunchData({ "refresh-all": "" });
 
   return groupNode;
 }
@@ -761,6 +764,9 @@ figma.on("selectionchange", sendSelectionState);
 
 // 初期状態送信
 sendSelectionState();
+
+// ページにrelaunchボタンを設定
+figma.currentPage.setRelaunchData({ "refresh-all": "全矢印の位置を更新" });
 
 // カラースタイル・バリアブルをUIに送信
 async function sendColorSwatches() {
@@ -870,6 +876,36 @@ figma.on("documentchange", (event) => {
   }
 });
 
+// 全矢印を更新
+async function refreshAllArrows(): Promise<number> {
+  let count = 0;
+  const allNodes = figma.currentPage.children;
+  for (const node of allNodes) {
+    const arrowData = getArrowData(node);
+    if (arrowData && node.type === "GROUP") {
+      const source = figma.getNodeById(arrowData.sourceId) as SceneNode;
+      const target = figma.getNodeById(arrowData.targetId) as SceneNode;
+      if (source && target) {
+        await drawArrow(source, target, arrowData.options, node);
+        count++;
+      }
+    }
+  }
+  arrowIndex = buildArrowIndex();
+  return count;
+}
+
+// プラグイン起動時に全矢印を自動更新
+(async () => {
+  const count = await refreshAllArrows();
+  if (count > 0) {
+    figma.notify(`${count}本の矢印を更新しました`);
+  }
+  if (isRelaunch) {
+    figma.closePlugin();
+  }
+})();
+
 // UIからのメッセージ処理
 figma.ui.onmessage = async (msg) => {
   if (msg.type === "connect") {
@@ -953,19 +989,7 @@ figma.ui.onmessage = async (msg) => {
   }
 
   if (msg.type === "refresh-all") {
-    let count = 0;
-    const allNodes = figma.currentPage.children;
-    for (const node of allNodes) {
-      const arrowData = getArrowData(node);
-      if (arrowData && node.type === "GROUP") {
-        const source = figma.getNodeById(arrowData.sourceId) as SceneNode;
-        const target = figma.getNodeById(arrowData.targetId) as SceneNode;
-        if (source && target) {
-          await drawArrow(source, target, arrowData.options, node);
-          count++;
-        }
-      }
-    }
+    const count = await refreshAllArrows();
     figma.notify(`${count}本の矢印を更新しました`);
   }
 

@@ -562,7 +562,6 @@
     <div class="hint" id="hint">2つのフレームを選択すると接続できます</div>
 
     <div class="divider"></div>
-    <button class="btn btn-outline" id="refreshAllBtn">全矢印の位置を更新</button>
     <button class="btn btn-secondary" id="cancelBtn">閉じる</button>
   </div>
 
@@ -1196,9 +1195,7 @@
       }}, '*');
     });
 
-    document.getElementById('refreshAllBtn').addEventListener('click', () => {
-      parent.postMessage({ pluginMessage: { type: 'refresh-all' }}, '*');
-    });
+
 
     document.getElementById('deleteBtn').addEventListener('click', () => {
       if (!currentArrowId) return;
