@@ -2,7 +2,7 @@
 
 const isRelaunch = figma.command === "refresh-all";
 
-figma.showUI(__html__, { width: 300, height: 580, themeColors: true });
+figma.showUI(__html__, { width: 380, height: 620, themeColors: true });
 
 const PLUGIN_DATA_KEY = "arrow-connector-data";
 
