@@ -2,7 +2,7 @@
 
 const isRelaunch = figma.command === "refresh-all";
 
-figma.showUI(__html__, { width: 460, height: 745, themeColors: true });
+figma.showUI(__html__, { width: 410, height: 680, themeColors: true });
 
 const PLUGIN_DATA_KEY = "arrow-connector-data";
 
@@ -733,7 +733,6 @@ async function sendColorSwatches() {
   try {
     const colorVars = await figma.variables.getLocalVariablesAsync("COLOR");
     for (const v of colorVars) {
-      // デフォルトモードの値を取得
       const collection = await figma.variables.getVariableCollectionByIdAsync(v.variableCollectionId);
       if (!collection) continue;
       const modeId = collection.defaultModeId;
@@ -748,7 +747,50 @@ async function sendColorSwatches() {
     }
   } catch {}
 
-  figma.ui.postMessage({ type: "color-swatches", swatches });
+  // ページ内で使われている色を収集
+  const pageColors = new Set<string>();
+  function collectColors(node: SceneNode) {
+    if ("fills" in node) {
+      const fills = node.fills;
+      if (Array.isArray(fills)) {
+        for (const fill of fills) {
+          if (fill.type === "SOLID" && fill.visible !== false) {
+            pageColors.add(rgbToHex(fill.color));
+          }
+        }
+      }
+    }
+    if ("strokes" in node) {
+      const strokes = node.strokes;
+      if (Array.isArray(strokes)) {
+        for (const stroke of strokes) {
+          if (stroke.type === "SOLID" && stroke.visible !== false) {
+            pageColors.add(rgbToHex(stroke.color));
+          }
+        }
+      }
+    }
+    if ("children" in node) {
+      for (const child of (node as ChildrenMixin).children) {
+        collectColors(child as SceneNode);
+      }
+    }
+  }
+  try {
+    for (const child of figma.currentPage.children) {
+      // 矢印グループはスキップ
+      if (getArrowData(child)) continue;
+      collectColors(child);
+    }
+  } catch {}
+
+  const pageSwatches = Array.from(pageColors).map((hex) => ({
+    name: hex,
+    hex,
+    group: "page",
+  }));
+
+  figma.ui.postMessage({ type: "color-swatches", swatches, pageSwatches });
 }
 
 sendColorSwatches();

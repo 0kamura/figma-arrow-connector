@@ -1,7 +1,7 @@
 "use strict";
 // Arrow Connector Plugin - FigJam風の矢印でFrameを繋ぐ
 const isRelaunch = figma.command === "refresh-all";
-figma.showUI(__html__, { width: 460, height: 745, themeColors: true });
+figma.showUI(__html__, { width: 410, height: 680, themeColors: true });
 const PLUGIN_DATA_KEY = "arrow-connector-data";
 // ノードの絶対座標バウンディングボックスを取得
 function getAbsBounds(node) {
@@ -615,7 +615,6 @@ async function sendColorSwatches() {
     try {
         const colorVars = await figma.variables.getLocalVariablesAsync("COLOR");
         for (const v of colorVars) {
-            // デフォルトモードの値を取得
             const collection = await figma.variables.getVariableCollectionByIdAsync(v.variableCollectionId);
             if (!collection)
                 continue;
@@ -631,7 +630,50 @@ async function sendColorSwatches() {
         }
     }
     catch (_b) { }
-    figma.ui.postMessage({ type: "color-swatches", swatches });
+    // ページ内で使われている色を収集
+    const pageColors = new Set();
+    function collectColors(node) {
+        if ("fills" in node) {
+            const fills = node.fills;
+            if (Array.isArray(fills)) {
+                for (const fill of fills) {
+                    if (fill.type === "SOLID" && fill.visible !== false) {
+                        pageColors.add(rgbToHex(fill.color));
+                    }
+                }
+            }
+        }
+        if ("strokes" in node) {
+            const strokes = node.strokes;
+            if (Array.isArray(strokes)) {
+                for (const stroke of strokes) {
+                    if (stroke.type === "SOLID" && stroke.visible !== false) {
+                        pageColors.add(rgbToHex(stroke.color));
+                    }
+                }
+            }
+        }
+        if ("children" in node) {
+            for (const child of node.children) {
+                collectColors(child);
+            }
+        }
+    }
+    try {
+        for (const child of figma.currentPage.children) {
+            // 矢印グループはスキップ
+            if (getArrowData(child))
+                continue;
+            collectColors(child);
+        }
+    }
+    catch (_c) { }
+    const pageSwatches = Array.from(pageColors).map((hex) => ({
+        name: hex,
+        hex,
+        group: "page",
+    }));
+    figma.ui.postMessage({ type: "color-swatches", swatches, pageSwatches });
 }
 sendColorSwatches();
 // --- フレーム移動の自動追従 ---

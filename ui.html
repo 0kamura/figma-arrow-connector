@@ -21,18 +21,21 @@
       font-size: 12px;
       font-weight: 400;
       color: var(--c-text);
-      padding: 16px 32px;
+      padding: 16px 24px;
       background: var(--c-bg);
       line-height: 1;
     }
 
     /* ---- Section ---- */
-    .section { margin-bottom: 28px; }
+    .section {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
     .section-title {
       font-size: 14px;
       font-weight: 500;
       color: var(--c-text);
-      margin-bottom: 12px;
     }
 
     /* ---- Frame ---- */
@@ -97,7 +100,7 @@
       white-space: nowrap;
     }
     .empty-state {
-      background: var(--c-white);
+      background: none;
       border-radius: 4px;
       padding: 14px 12px;
       color: var(--c-text3);
@@ -147,7 +150,6 @@
       display: flex;
       gap: 16px;
       align-items: center;
-      margin-bottom: 16px;
     }
     .color-input-box {
       display: flex;
@@ -293,7 +295,6 @@
       display: flex;
       align-items: center;
       gap: 16px;
-      margin-bottom: 16px;
     }
     .weight-row {
       display: flex;
@@ -388,7 +389,6 @@
       background: var(--c-bg2);
       border-radius: 4px;
       padding: 4px 3px;
-      margin-bottom: 16px;
     }
     .arrow-dir-btn {
       flex: 1;
@@ -423,7 +423,7 @@
     .divider {
       height: 1px;
       background: var(--c-border);
-      margin: 28px 0;
+      margin: 0;
     }
 
     /* Break Point */
@@ -539,13 +539,13 @@
       font-size: 11px;
       color: var(--c-text3);
       text-align: center;
-      margin-top: 4px;
+      margin-top: -16px;
     }
   </style>
 </head>
 <body>
   <!-- Create Mode -->
-  <div id="createMode">
+  <div id="createMode" style="display:flex;flex-direction:column;gap:24px">
     <div class="section">
       <div class="section-title">Frame</div>
       <div class="frame-container">
@@ -587,6 +587,7 @@
     </div>
 
     <div class="section">
+      <div class="divider"></div>
       <div class="section-title">Stroke</div>
       <div class="stroke-top">
         <div class="weight-row">
@@ -619,7 +620,7 @@
         </button>
       </div>
       <div class="divider"></div>
-      <div class="toggle-field" style="margin-bottom:16px;">
+      <div class="toggle-field">
         <span class="tf-label">Curved</span><span class="tf-colon">:</span>
         <div class="toggle-mini">
           <input type="checkbox" id="curved" />
@@ -639,6 +640,7 @@
     </div>
 
     <div class="section">
+      <div class="divider"></div>
       <div class="section-title">Label</div>
       <input type="text" class="label-input" id="labelInput" placeholder="Input Text" />
     </div>
@@ -649,7 +651,7 @@
   </div>
 
   <!-- Edit Mode -->
-  <div id="editMode" style="display:none;">
+  <div id="editMode" style="display:none;flex-direction:column;gap:24px;">
     <div class="section">
       <div class="section-title">Frame</div>
       <div class="frame-container">
@@ -689,6 +691,7 @@
     </div>
 
     <div class="section">
+      <div class="divider"></div>
       <div class="section-title">Stroke</div>
       <div class="stroke-top">
         <div class="weight-row">
@@ -721,7 +724,7 @@
         </button>
       </div>
       <div class="divider"></div>
-      <div class="toggle-field" style="margin-bottom:16px;">
+      <div class="toggle-field">
         <span class="tf-label">Curved</span><span class="tf-colon">:</span>
         <div class="toggle-mini">
           <input type="checkbox" id="editCurved" />
@@ -741,6 +744,7 @@
     </div>
 
     <div class="section">
+      <div class="divider"></div>
       <div class="section-title">Label</div>
       <input type="text" class="label-input" id="editLabelInput" placeholder="Input Text" />
     </div>
@@ -915,6 +919,7 @@
     setupDD('editStyleSelect','editDropdownPanel','editDdTabs','editDdList','editColorPicker','editColorHex','editColorSwatch');
     document.addEventListener('click', () => { document.querySelectorAll('.dropdown-panel').forEach(d => d.classList.remove('open')); });
 
+    let allPageSwatches = [];
     function renderSwatchGrids() {
       ['swatchGrid','editSwatchGrid'].forEach((gid, idx) => {
         const grid = document.getElementById(gid);
@@ -922,12 +927,13 @@
         const hid = idx === 0 ? 'colorHex' : 'editColorHex';
         const sid = idx === 0 ? 'colorSwatch' : 'editColorSwatch';
         grid.innerHTML = '';
-        if (!allSwatches.length) { grid.innerHTML = '<span class="no-swatches">No styles/variables</span>'; return; }
-        for (const it of allSwatches) {
+        const items = allPageSwatches.length ? allPageSwatches : allSwatches;
+        if (!items.length) { grid.innerHTML = '<span class="no-swatches">No colors on this page</span>'; return; }
+        for (const it of items) {
           const sw = document.createElement('div');
           sw.className = 'swatch-item';
           sw.style.background = it.hex;
-          sw.title = it.name;
+          sw.title = it.name || it.hex;
           sw.addEventListener('click', () => {
             document.getElementById(pid).value = it.hex;
             document.getElementById(hid).textContent = it.hex.replace('#','');
@@ -958,13 +964,14 @@
 
       if (msg.type === 'color-swatches') {
         allSwatches = msg.swatches;
+        allPageSwatches = msg.pageSwatches || [];
         renderSwatchGrids();
       }
 
       if (msg.type === 'selection-update') {
         frames = msg.frames;
         currentArrowId = null;
-        createMode.style.display = 'block';
+        createMode.style.display = 'flex';
         editMode.style.display = 'none';
         updateCreateUI();
         // 自動計算された接続位置をピッカーに反映
@@ -979,7 +986,7 @@
       if (msg.type === 'edit-arrow') {
         currentArrowId = msg.arrowId;
         createMode.style.display = 'none';
-        editMode.style.display = 'block';
+        editMode.style.display = 'flex';
 
         editFrameList.innerHTML = '';
         [{n: msg.sourceName, e: msg.sourceExists, c: '#6177f4'},
