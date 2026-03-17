@@ -2,8 +2,6 @@
 <html>
 <head>
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500&display=swap');
-
     :root {
       --c-bg: var(--figma-color-bg, #ffffff);
       --c-bg2: #f0f0f0;
@@ -19,7 +17,7 @@
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
     body {
-      font-family: 'Noto Sans JP', sans-serif;
+      font-family: 'Inter', 'Noto Sans JP', -apple-system, BlinkMacSystemFont, sans-serif;
       font-size: 12px;
       font-weight: 400;
       color: var(--c-text);
@@ -795,7 +793,7 @@
       function upd() {
         for (const dd of Object.values(dots)) {
           dd.classList.remove('active');
-          dd.style.background = '';
+          dd.style.background = 'none';
           dd.style.borderColor = '';
         }
         if (selected !== 'auto' && dots[selected]) {
@@ -1027,8 +1025,6 @@
       }
       const colors = ['#6177f4','#6ab39a'];
       const display = frames.slice(0, 2);
-      const oldS = startPicker ? startPicker.getValue() : (window._savedStart || 'auto');
-      const oldE = endPicker ? endPicker.getValue() : (window._savedEnd || 'auto');
 
       display.forEach((f, i) => {
         const row = document.createElement('div');
@@ -1040,8 +1036,8 @@
         const ph = document.createElement('span');
         row.appendChild(ph);
         frameList.appendChild(row);
-        if (i === 0) { startPicker = createInlinePicker(ph, colors[i]); startPicker.setValue(oldS); }
-        else { endPicker = createInlinePicker(ph, colors[i]); endPicker.setValue(oldE); }
+        if (i === 0) { startPicker = createInlinePicker(ph, colors[i]); }
+        else { endPicker = createInlinePicker(ph, colors[i]); }
       });
 
       if (frames.length === 1) { connectBtn.disabled = true; hint.textContent = 'Select 1 more frame'; }
@@ -1056,8 +1052,6 @@
         strokeWeight: parseInt(strokeWeight.value),
         curved: document.getElementById('curved').checked,
         dashed: document.getElementById('dashed').checked,
-        startSide: startPicker ? startPicker.getValue() : 'auto',
-        endSide: endPicker ? endPicker.getValue() : 'auto',
         arrowDirValue: arrowDirCreate.getValue(),
         bendPosition: parseInt(bendPosition.value),
       };
@@ -1075,8 +1069,6 @@
         if (p.arrowDirValue) arrowDirCreate.setValue(p.arrowDirValue);
         if (p.bendPosition) { bendPosition.value = p.bendPosition; bendInput.value = p.bendPosition; updateSliderBg(bendPosition); }
         updateBendVis(document.getElementById('curved'), bendRow);
-        window._savedStart = p.startSide;
-        window._savedEnd = p.endSide;
       } catch {}
     }
     loadPrefs();
