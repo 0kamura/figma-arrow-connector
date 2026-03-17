@@ -2,63 +2,83 @@
 <html>
 <head>
   <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body {
-      font-family: 'Inter', -apple-system, sans-serif;
-      font-size: 12px;
-      color: #333;
-      padding: 16px;
-      background: #fff;
+    :root {
+      --c-bg: var(--figma-color-bg, #ffffff);
+      --c-bg2: var(--figma-color-bg-secondary, #f4f4f4);
+      --c-bg-hover: var(--figma-color-bg-hover, #ebebeb);
+      --c-text: var(--figma-color-text, #1f1f1f);
+      --c-text2: var(--figma-color-text-secondary, #888888);
+      --c-text3: var(--figma-color-text-tertiary, #b0b0b0);
+      --c-border: var(--figma-color-border, #e5e5e5);
+      --c-accent: #1f1f1f;
+      --c-accent-hover: #333333;
+      --c-accent-soft: #f4f4f4;
+      --c-start: #1f1f1f;
+      --c-end: #888888;
+      --c-danger: #e24c4c;
+      --radius: 10px;
     }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      font-size: 12px;
+      color: var(--c-text);
+      padding: 16px;
+      background: var(--c-bg);
+      line-height: 1.5;
+    }
+
     h2 {
       font-size: 14px;
       font-weight: 600;
       margin-bottom: 12px;
-      color: #1a1a1a;
+      color: var(--c-text);
     }
+
     .mode-label {
       font-size: 11px;
       font-weight: 600;
-      color: #7B61FF;
-      background: #F0EDFF;
+      color: var(--c-accent);
+      background: var(--c-accent-soft);
       border-radius: 4px;
       padding: 2px 8px;
       display: inline-block;
       margin-bottom: 8px;
     }
-    .section {
-      margin-bottom: 14px;
-    }
+
+    .section { margin-bottom: 14px; }
+
     .section-label {
       font-size: 11px;
-      font-weight: 600;
-      color: #888;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
+      font-weight: 500;
+      color: var(--c-text2);
       margin-bottom: 6px;
     }
+
+    /* ---- Frame list ---- */
     .frame-list {
-      background: #f5f5f5;
-      border-radius: 8px;
-      padding: 8px;
+      background: var(--c-bg2);
+      border-radius: var(--radius);
+      padding: 6px;
       min-height: 48px;
       display: flex;
       flex-direction: column;
       gap: 4px;
     }
     .frame-item {
-      background: #fff;
+      background: var(--c-bg);
       border-radius: 6px;
       padding: 8px 10px;
       font-size: 12px;
       display: flex;
       align-items: center;
       gap: 6px;
-      border: 1px solid #e5e5e5;
     }
     .frame-item .icon {
-      width: 14px;
-      height: 14px;
+      width: 10px;
+      height: 10px;
       border-radius: 3px;
       flex-shrink: 0;
     }
@@ -67,6 +87,7 @@
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
+      color: var(--c-text);
     }
     .frame-item .badge {
       font-size: 10px;
@@ -76,11 +97,13 @@
       font-weight: 600;
     }
     .empty-state {
-      color: #aaa;
+      color: var(--c-text3);
       font-size: 11px;
       text-align: center;
       padding: 12px;
     }
+
+    /* ---- Options ---- */
     .options-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -93,27 +116,20 @@
     }
     .option-group label {
       font-size: 11px;
-      color: #666;
+      color: var(--c-text2);
       font-weight: 500;
-    }
-    .option-group input[type="color"] {
-      width: 100%;
-      height: 32px;
-      border: 1px solid #ddd;
-      border-radius: 6px;
-      cursor: pointer;
-      padding: 2px;
-      background: #fff;
     }
     .option-group input[type="range"] {
       width: 100%;
-      accent-color: #7B61FF;
+      accent-color: var(--c-accent);
     }
     .option-group .range-value {
       font-size: 11px;
-      color: #999;
+      color: var(--c-text3);
       text-align: right;
     }
+
+    /* ---- Toggle ---- */
     .toggle-row {
       display: flex;
       align-items: center;
@@ -122,7 +138,7 @@
     }
     .toggle-row label {
       font-size: 12px;
-      color: #333;
+      color: var(--c-text);
     }
     .toggle {
       position: relative;
@@ -142,7 +158,7 @@
       position: absolute;
       cursor: pointer;
       inset: 0;
-      background: #ccc;
+      background: var(--c-border);
       border-radius: 20px;
       transition: 0.2s;
     }
@@ -153,65 +169,68 @@
       height: 16px;
       left: 2px;
       bottom: 2px;
-      background: #fff;
+      background: var(--c-bg);
       border-radius: 50%;
       transition: 0.2s;
     }
     .toggle input:checked + .slider {
-      background: #7B61FF;
+      background: var(--c-accent);
     }
     .toggle input:checked + .slider::before {
       transform: translateX(16px);
     }
+
+    /* ---- Buttons ---- */
     .btn {
       width: 100%;
       padding: 10px;
       border: none;
-      border-radius: 8px;
-      font-size: 13px;
+      border-radius: var(--radius);
+      font-size: 12px;
       font-weight: 600;
+      font-family: inherit;
       cursor: pointer;
-      transition: background 0.15s;
+      transition: all 0.15s;
       margin-bottom: 4px;
     }
     .btn-primary {
-      background: #7B61FF;
+      background: var(--c-accent);
       color: #fff;
     }
     .btn-primary:hover {
-      background: #6a50e6;
+      background: var(--c-accent-hover);
     }
     .btn-primary:disabled {
-      background: #d4d4d4;
-      color: #999;
+      background: var(--c-bg2);
+      color: var(--c-text3);
       cursor: not-allowed;
     }
     .btn-outline {
-      background: #fff;
-      color: #7B61FF;
-      border: 1.5px solid #7B61FF;
+      background: var(--c-bg);
+      color: var(--c-text);
+      border: 1px solid var(--c-border);
     }
     .btn-outline:hover {
-      background: #F0EDFF;
+      background: var(--c-bg2);
     }
     .btn-danger {
-      background: #fff;
-      color: #FF4444;
-      border: 1.5px solid #FF4444;
+      background: var(--c-bg);
+      color: var(--c-danger);
+      border: 1px solid var(--c-danger);
     }
     .btn-danger:hover {
       background: #FFF0F0;
     }
     .btn-secondary {
       background: transparent;
-      color: #666;
+      color: var(--c-text2);
     }
     .btn-secondary:hover {
-      background: #f5f5f5;
+      background: var(--c-bg2);
     }
     .hint {
       font-size: 11px;
-      color: #aaa;
+      color: var(--c-text3);
       text-align: center;
       margin-top: 2px;
       margin-bottom: 4px;
@@ -227,41 +246,39 @@
     }
     .divider {
       height: 1px;
-      background: #eee;
+      background: var(--c-border);
       margin: 10px 0;
     }
+
+    /* ---- Frame row + swap ---- */
     .frame-section-row {
       display: flex;
       gap: 6px;
       align-items: center;
     }
-    .frame-section-row .frame-list {
-      flex: 1;
-    }
+    .frame-section-row .frame-list { flex: 1; }
     .swap-btn {
       width: 28px;
       height: 28px;
-      border: 1.5px solid #ddd;
+      border: 1px solid var(--c-border);
       border-radius: 6px;
-      background: #fff;
+      background: var(--c-bg);
       cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
       flex-shrink: 0;
       transition: all 0.12s;
-      color: #888;
-      font-size: 14px;
+      color: var(--c-text3);
     }
     .swap-btn:hover {
-      border-color: #7B61FF;
-      color: #7B61FF;
-      background: #F0EDFF;
+      border-color: var(--c-accent);
+      color: var(--c-accent);
+      background: var(--c-accent-soft);
     }
-    .swap-btn svg {
-      width: 16px;
-      height: 16px;
-    }
+    .swap-btn svg { width: 16px; height: 16px; }
+
+    /* ---- Color ---- */
     .color-section {
       display: flex;
       flex-direction: column;
@@ -269,24 +286,23 @@
     }
     .color-row {
       display: flex;
-      gap: 6px;
+      gap: 8px;
       align-items: center;
     }
     .color-row input[type="color"] {
-      width: 32px;
-      height: 32px;
-      border: 1px solid #ddd;
+      width: 28px;
+      height: 28px;
+      border: 1px solid var(--c-border);
       border-radius: 6px;
       cursor: pointer;
       padding: 2px;
-      background: #fff;
+      background: var(--c-bg);
       flex-shrink: 0;
     }
     .color-hex {
       font-size: 11px;
-      color: #666;
-      font-family: monospace;
-      min-width: 58px;
+      color: var(--c-text2);
+      font-family: 'SF Mono', 'Menlo', 'Consolas', monospace;
     }
     .swatch-grid {
       display: flex;
@@ -297,41 +313,44 @@
       width: 20px;
       height: 20px;
       border-radius: 4px;
-      border: 1.5px solid rgba(0,0,0,0.1);
+      border: 1.5px solid rgba(0,0,0,0.08);
       cursor: pointer;
       transition: all 0.1s;
       position: relative;
     }
     .swatch:hover {
-      transform: scale(1.2);
+      transform: scale(1.15);
       z-index: 1;
     }
     .swatch.active {
-      border-color: #333;
-      box-shadow: 0 0 0 2px rgba(0,0,0,0.15);
+      border-color: var(--c-text);
+      box-shadow: 0 0 0 2px var(--c-accent-soft);
     }
     .swatch-group-label {
       font-size: 10px;
-      color: #aaa;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.3px;
+      color: var(--c-text3);
+      font-weight: 500;
       margin-top: 2px;
     }
     .no-swatches {
       font-size: 10px;
-      color: #ccc;
+      color: var(--c-text3);
     }
+
+    /* ---- Arrow direction ---- */
     .arrow-dir {
       display: flex;
-      gap: 4px;
+      gap: 3px;
+      background: var(--c-bg2);
+      border-radius: var(--radius);
+      padding: 3px;
     }
     .arrow-dir-btn {
       flex: 1;
-      height: 30px;
-      border: 1.5px solid #ddd;
-      border-radius: 6px;
-      background: #fff;
+      height: 28px;
+      border: none;
+      border-radius: 5px;
+      background: transparent;
       cursor: pointer;
       display: flex;
       align-items: center;
@@ -340,45 +359,48 @@
       padding: 0;
     }
     .arrow-dir-btn:hover {
-      border-color: #7B61FF;
+      background: var(--c-bg-hover);
     }
     .arrow-dir-btn.active {
-      border-color: #7B61FF;
-      background: #F0EDFF;
+      background: var(--c-bg);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
     }
     .arrow-dir-btn svg {
       width: 24px;
       height: 12px;
-      stroke: #666;
-      fill: #666;
+      stroke: var(--c-text3);
+      fill: var(--c-text3);
     }
     .arrow-dir-btn.active svg {
-      stroke: #7B61FF;
-      fill: #7B61FF;
+      stroke: var(--c-text);
+      fill: var(--c-text);
     }
+
+    /* ---- Label input ---- */
     .label-input {
       width: 100%;
       height: 32px;
-      border: 1px solid #ddd;
+      border: 1px solid var(--c-border);
       border-radius: 6px;
       padding: 0 8px;
       font-size: 12px;
-      font-family: 'Inter', -apple-system, sans-serif;
-      background: #fff;
+      font-family: inherit;
+      background: var(--c-bg);
+      color: var(--c-text);
       outline: none;
       transition: border-color 0.15s;
     }
     .label-input:focus {
-      border-color: #7B61FF;
+      border-color: var(--c-accent);
     }
     .label-input::placeholder {
-      color: #bbb;
+      color: var(--c-text3);
     }
 
     /* ---- Point Picker ---- */
     .picker-row {
       display: flex;
-      gap: 12px;
+      gap: 8px;
       align-items: flex-start;
     }
     .picker-col {
@@ -387,11 +409,21 @@
       flex-direction: column;
       align-items: center;
       gap: 4px;
+      background: var(--c-bg2);
+      border-radius: var(--radius);
+      padding: 8px 4px 6px;
     }
     .picker-col-label {
       font-size: 11px;
       font-weight: 600;
-      color: #666;
+      color: var(--c-text2);
+    }
+    .picker-col-label-start { color: var(--c-start); }
+    .picker-col-label-end { color: var(--c-end); }
+    .option-group-label {
+      font-size: 11px;
+      color: var(--c-text2);
+      font-weight: 500;
     }
     .point-picker {
       position: relative;
@@ -404,60 +436,59 @@
       left: 12px;
       width: 48px;
       height: 36px;
-      border: 1.5px solid #ccc;
+      border: 1.5px solid var(--c-border);
       border-radius: 4px;
-      background: #fafafa;
+      background: var(--c-bg);
     }
     .point-picker .pp-dot {
       position: absolute;
-      width: 12px;
-      height: 12px;
+      width: 10px;
+      height: 10px;
       border-radius: 50%;
-      border: 1.5px solid #bbb;
-      background: #fff;
+      border: 1.5px solid var(--c-border);
+      background: var(--c-bg);
       cursor: pointer;
       transform: translate(-50%, -50%);
       transition: all 0.12s;
       z-index: 2;
     }
     .point-picker .pp-dot:hover {
-      border-color: #7B61FF;
-      background: #F0EDFF;
-      transform: translate(-50%, -50%) scale(1.25);
+      border-color: var(--c-accent);
+      background: var(--c-accent-soft);
+      transform: translate(-50%, -50%) scale(1.3);
     }
     .point-picker .pp-dot.active {
-      background: #7B61FF;
-      border-color: #7B61FF;
-      box-shadow: 0 0 0 2px rgba(123,97,255,0.25);
+      background: var(--c-accent);
+      border-color: var(--c-accent);
+      box-shadow: 0 0 0 2px rgba(123,97,255,0.2);
     }
     .point-picker .pp-dot.active:hover {
-      background: #6a50e6;
+      background: var(--c-accent-hover);
     }
     .pp-auto-btn {
       font-size: 10px;
       font-weight: 600;
-      color: #999;
-      background: #f0f0f0;
-      border: 1.5px solid transparent;
+      font-family: inherit;
+      color: var(--c-text3);
+      background: var(--c-bg);
+      border: 1px solid var(--c-border);
       border-radius: 4px;
       padding: 2px 10px;
       cursor: pointer;
       transition: all 0.12s;
     }
     .pp-auto-btn:hover {
-      color: #7B61FF;
-      background: #F0EDFF;
+      color: var(--c-accent);
+      border-color: var(--c-accent);
     }
     .pp-auto-btn.active {
       color: #fff;
-      background: #7B61FF;
-      border-color: #7B61FF;
+      background: var(--c-accent);
+      border-color: var(--c-accent);
     }
   </style>
 </head>
 <body>
-  <h2>Arrow Connector</h2>
-
   <!-- 新規作成モード -->
   <div id="createMode">
     <div class="section">
@@ -479,12 +510,12 @@
       <div class="section-label">接続位置</div>
       <div class="picker-row">
         <div class="picker-col">
-          <div class="picker-col-label" style="color:#7B61FF;">始点</div>
+          <div class="picker-col-label picker-col-label-start">始点</div>
           <div class="point-picker" id="startPicker"></div>
           <button class="pp-auto-btn active" id="startAutoBtn">AUTO</button>
         </div>
         <div class="picker-col">
-          <div class="picker-col-label" style="color:#FF6B6B;">終点</div>
+          <div class="picker-col-label picker-col-label-end">終点</div>
           <div class="point-picker" id="endPicker"></div>
           <button class="pp-auto-btn active" id="endAutoBtn">AUTO</button>
         </div>
@@ -494,7 +525,7 @@
     <div class="section">
       <div class="section-label">スタイル設定</div>
       <div class="color-section">
-        <label class="option-group-label" style="font-size:11px;color:#666;font-weight:500;">カラー</label>
+        <label class="option-group-label">カラー</label>
         <div class="color-row">
           <input type="color" id="colorPicker" value="#333333" />
           <span class="color-hex" id="colorHex">#333333</span>
@@ -561,8 +592,6 @@
     <button class="btn btn-primary" id="connectBtn" disabled>矢印で接続</button>
     <div class="hint" id="hint">2つのフレームを選択すると接続できます</div>
 
-    <div class="divider"></div>
-    <button class="btn btn-secondary" id="cancelBtn">閉じる</button>
   </div>
 
   <!-- 編集モード -->
@@ -586,12 +615,12 @@
       <div class="section-label">接続位置</div>
       <div class="picker-row">
         <div class="picker-col">
-          <div class="picker-col-label" style="color:#7B61FF;">始点</div>
+          <div class="picker-col-label picker-col-label-start">始点</div>
           <div class="point-picker" id="editStartPicker"></div>
           <button class="pp-auto-btn active" id="editStartAutoBtn">AUTO</button>
         </div>
         <div class="picker-col">
-          <div class="picker-col-label" style="color:#FF6B6B;">終点</div>
+          <div class="picker-col-label picker-col-label-end">終点</div>
           <div class="point-picker" id="editEndPicker"></div>
           <button class="pp-auto-btn active" id="editEndAutoBtn">AUTO</button>
         </div>
@@ -601,7 +630,7 @@
     <div class="section">
       <div class="section-label">スタイル設定</div>
       <div class="color-section">
-        <label class="option-group-label" style="font-size:11px;color:#666;font-weight:500;">カラー</label>
+        <label class="option-group-label">カラー</label>
         <div class="color-row">
           <input type="color" id="editColorPicker" value="#333333" />
           <span class="color-hex" id="editColorHex">#333333</span>
@@ -670,7 +699,6 @@
       <button class="btn btn-outline" id="refreshBtn">位置を更新</button>
       <button class="btn btn-danger" id="deleteBtn">削除</button>
     </div>
-    <button class="btn btn-secondary" id="editCancelBtn">閉じる</button>
   </div>
 
   <script>
@@ -767,10 +795,10 @@
     }
 
     // Initialize 4 pickers
-    const startPicker = createPointPicker('startPicker', 'startAutoBtn', '#7B61FF');
-    const endPicker = createPointPicker('endPicker', 'endAutoBtn', '#FF6B6B');
-    const editStartPicker = createPointPicker('editStartPicker', 'editStartAutoBtn', '#7B61FF');
-    const editEndPicker = createPointPicker('editEndPicker', 'editEndAutoBtn', '#FF6B6B');
+    const startPicker = createPointPicker('startPicker', 'startAutoBtn', '#1f1f1f');
+    const endPicker = createPointPicker('endPicker', 'endAutoBtn', '#888888');
+    const editStartPicker = createPointPicker('editStartPicker', 'editStartAutoBtn', '#1f1f1f');
+    const editEndPicker = createPointPicker('editEndPicker', 'editEndAutoBtn', '#888888');
 
     // ---- Main Logic ----
     let frames = [];
@@ -928,14 +956,14 @@
 
         editFrameList.innerHTML = `
           <div class="frame-item">
-            <div class="icon" style="background: ${msg.sourceExists ? '#7B61FF' : '#ccc'}"></div>
+            <div class="icon" style="background: ${msg.sourceExists ? '#1f1f1f' : '#ccc'}"></div>
             <span class="name">${msg.sourceName}</span>
-            <span class="badge" style="background: #7B61FF">始点</span>
+            <span class="badge" style="background: #1f1f1f">始点</span>
           </div>
           <div class="frame-item">
-            <div class="icon" style="background: ${msg.targetExists ? '#FF6B6B' : '#ccc'}"></div>
+            <div class="icon" style="background: ${msg.targetExists ? '#888888' : '#ccc'}"></div>
             <span class="name">${msg.targetName}</span>
-            <span class="badge" style="background: #FF6B6B">終点</span>
+            <span class="badge" style="background: #888888">終点</span>
           </div>`;
 
         const opts = msg.options;
@@ -973,18 +1001,18 @@
       } else if (frames.length === 1) {
         frameList.innerHTML = `
           <div class="frame-item">
-            <div class="icon" style="background: #7B61FF"></div>
+            <div class="icon" style="background: #1f1f1f"></div>
             <span class="name">${frames[0].name}</span>
-            <span class="badge" style="background: #7B61FF">始点</span>
+            <span class="badge" style="background: #1f1f1f">始点</span>
           </div>`;
         connectBtn.disabled = true;
         hint.textContent = 'もう1つフレームを選択してください';
       } else {
         frameList.innerHTML = frames.slice(0, 2).map((f, i) =>
           `<div class="frame-item">
-            <div class="icon" style="background: ${i === 0 ? '#7B61FF' : '#FF6B6B'}"></div>
+            <div class="icon" style="background: ${i === 0 ? '#1f1f1f' : '#888888'}"></div>
             <span class="name">${f.name}</span>
-            <span class="badge" style="background: ${i === 0 ? '#7B61FF' : '#FF6B6B'}">${i === 0 ? '始点' : '終点'}</span>
+            <span class="badge" style="background: ${i === 0 ? '#1f1f1f' : '#888888'}">${i === 0 ? '始点' : '終点'}</span>
           </div>`
         ).join('');
         hint.textContent = frames.length > 2 ? '最初の2つのフレームが接続されます' : '';
@@ -1195,8 +1223,6 @@
       }}, '*');
     });
 
-
-
     document.getElementById('deleteBtn').addEventListener('click', () => {
       if (!currentArrowId) return;
       parent.postMessage({ pluginMessage: {
@@ -1206,12 +1232,6 @@
       currentArrowId = null;
     });
 
-    document.getElementById('cancelBtn').addEventListener('click', () => {
-      parent.postMessage({ pluginMessage: { type: 'cancel' }}, '*');
-    });
-    document.getElementById('editCancelBtn').addEventListener('click', () => {
-      parent.postMessage({ pluginMessage: { type: 'cancel' }}, '*');
-    });
   </script>
 </body>
 </html>
