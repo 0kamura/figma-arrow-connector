@@ -2,43 +2,46 @@
 <html>
 <head>
   <style>
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500&display=swap');
+
     :root {
       --c-bg: var(--figma-color-bg, #ffffff);
-      --c-bg2: var(--figma-color-bg-secondary, #f4f4f4);
-      --c-bg-hover: var(--figma-color-bg-hover, #ebebeb);
-      --c-text: var(--figma-color-text, #1f1f1f);
-      --c-text2: var(--figma-color-text-secondary, #888888);
-      --c-text3: var(--figma-color-text-tertiary, #b0b0b0);
-      --c-border: var(--figma-color-border, #e5e5e5);
-      --c-accent: #1f1f1f;
-      --c-accent-hover: #333333;
-      --c-accent-soft: #f4f4f4;
-      --c-danger: #e24c4c;
-      --radius: 8px;
+      --c-bg2: #f0f0f0;
+      --c-text: #232324;
+      --c-text2: #5e5e5e;
+      --c-text3: #b9b9b9;
+      --c-border: #dbdde1;
+      --c-white: #ffffff;
+      --c-start: #6177f4;
+      --c-end: #6ab39a;
     }
 
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
     body {
-      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      font-family: 'Noto Sans JP', sans-serif;
       font-size: 12px;
+      font-weight: 400;
       color: var(--c-text);
-      padding: 20px 24px;
+      padding: 16px 24px;
       background: var(--c-bg);
-      line-height: 1.5;
+      line-height: 1;
     }
 
     /* ---- Section ---- */
-    .section { margin-bottom: 20px; }
+    .section { margin-bottom: 16px; }
     .section-title {
-      font-size: 13px;
-      font-weight: 600;
+      font-size: 16px;
+      font-weight: 500;
       color: var(--c-text);
-      margin-bottom: 10px;
+      margin-bottom: 16px;
     }
 
-    /* ---- Frame section ---- */
-    .frame-area {
+    /* ---- Frame ---- */
+    .frame-container {
+      background: var(--c-bg2);
+      border-radius: 4px;
+      padding: 9px 3px;
       display: flex;
       gap: 8px;
       align-items: center;
@@ -54,54 +57,57 @@
       align-items: center;
       justify-content: center;
       flex-shrink: 0;
-      transition: all 0.12s;
-      color: var(--c-text3);
+      color: var(--c-text2);
     }
-    .swap-btn:hover {
-      color: var(--c-accent);
-      background: var(--c-bg2);
-    }
+    .swap-btn:hover { color: var(--c-text); }
     .swap-btn svg { width: 16px; height: 16px; }
-
-    .frame-list {
+    .frame-rows {
       flex: 1;
       display: flex;
       flex-direction: column;
-      gap: 4px;
-      min-height: 48px;
+      gap: 8px;
+      padding-right: 8px;
+      min-width: 0;
+    }
+    .frame-row {
+      display: flex;
+      gap: 10px;
+      align-items: center;
     }
     .frame-item {
-      background: var(--c-bg2);
-      border-radius: 6px;
-      padding: 6px 8px;
-      font-size: 12px;
+      flex: 1;
+      min-width: 0;
+      background: var(--c-white);
+      border-radius: 4px;
+      padding: 8px 12px;
       display: flex;
       align-items: center;
-      gap: 8px;
-      height: 28px;
+      gap: 10px;
     }
     .frame-item .dot {
       width: 8px;
       height: 8px;
-      border-radius: 50%;
+      border-radius: 99px;
       flex-shrink: 0;
     }
     .frame-item .name {
-      flex: 1;
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--c-text);
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
-      color: var(--c-text);
-      font-size: 11px;
     }
     .empty-state {
+      background: var(--c-white);
+      border-radius: 4px;
+      padding: 14px 12px;
       color: var(--c-text3);
       font-size: 11px;
       text-align: center;
-      padding: 16px 8px;
     }
 
-    /* ---- Inline Point Picker (small, in frame row) ---- */
+    /* ---- Inline Point Picker 25x25 ---- */
     .pp-inline {
       position: relative;
       width: 25px;
@@ -114,7 +120,7 @@
       left: 2px;
       width: 21px;
       height: 21px;
-      border: 1px solid var(--c-border);
+      border: 1.5px solid var(--c-border);
       border-radius: 2px;
     }
     .pp-inline .pp-dot {
@@ -122,109 +128,110 @@
       width: 5px;
       height: 5px;
       border-radius: 50%;
-      background: var(--c-border);
+      border: 1px solid var(--c-border);
+      background: var(--c-white);
       cursor: pointer;
       transform: translate(-50%, -50%);
       transition: all 0.1s;
       z-index: 2;
     }
     .pp-inline .pp-dot:hover {
-      background: var(--c-accent);
-      transform: translate(-50%, -50%) scale(1.4);
+      background: var(--c-text2);
+      border-color: var(--c-text2);
     }
     .pp-inline .pp-dot.active {
-      background: var(--c-accent);
-    }
-    .pp-inline.auto-mode .pp-rect {
-      border-color: var(--c-accent);
+      background: var(--c-start);
+      border-color: var(--c-start);
     }
 
-    /* ---- Color section ---- */
+    /* ---- Color ---- */
     .color-row {
       display: flex;
-      gap: 8px;
+      gap: 16px;
       align-items: center;
-      margin-bottom: 10px;
+      margin-bottom: 16px;
     }
-    .color-input-wrap {
+    .color-input-box {
       display: flex;
       align-items: center;
       gap: 4px;
-      border: 1px solid var(--c-border);
-      border-radius: 6px;
-      padding: 4px 8px;
-      height: 26px;
-      background: var(--c-bg);
+      background: var(--c-bg2);
+      border-radius: 4px;
+      padding: 6px 8px;
+      width: 96px;
+      cursor: pointer;
     }
-    .color-input-wrap .color-swatch {
+    .color-input-box .swatch-preview {
       width: 13px;
       height: 13px;
-      border-radius: 3px;
-      border: 1px solid rgba(0,0,0,0.1);
-      cursor: pointer;
       flex-shrink: 0;
     }
-    .color-input-wrap input[type="color"] {
+    .color-input-box input[type="color"] {
       position: absolute;
-      width: 0;
-      height: 0;
+      width: 0; height: 0;
       opacity: 0;
       pointer-events: none;
     }
-    .color-input-wrap .hash { font-size: 11px; color: var(--c-text2); }
-    .color-input-wrap .hex-text {
+    .color-input-box .hash {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--c-text2);
+    }
+    .color-input-box .hex-val {
       font-size: 11px;
       color: var(--c-text);
-      font-family: 'SF Mono', 'Menlo', 'Consolas', monospace;
     }
-    .style-select {
+    .style-dropdown-btn {
       display: flex;
       align-items: center;
-      gap: 4px;
+      gap: 10px;
       border: 1px solid var(--c-border);
-      border-radius: 6px;
-      padding: 4px 12px;
-      height: 26px;
-      background: var(--c-bg);
+      border-radius: 4px;
+      padding: 6px 12px 8px 16px;
+      width: 160px;
+      background: var(--c-white);
       cursor: pointer;
-      font-size: 11px;
-      color: var(--c-text2);
       position: relative;
-      user-select: none;
+      font-family: inherit;
     }
-    .style-select:hover { border-color: var(--c-accent); }
-    .style-select .chevron {
-      width: 10px;
-      height: 10px;
-      margin-left: auto;
+    .style-dropdown-btn span {
+      font-size: 11px;
+      color: var(--c-text3);
+      flex: 1;
     }
+    .style-dropdown-btn .chevron {
+      width: 12px;
+      height: 12px;
+      flex-shrink: 0;
+    }
+    .style-dropdown-btn:hover { border-color: var(--c-text2); }
 
-    /* Swatch dropdown */
-    .swatch-dropdown {
+    /* Dropdown panel */
+    .dropdown-panel {
       display: none;
       position: absolute;
       top: 100%;
       left: 0;
       margin-top: 4px;
       width: 160px;
-      background: var(--c-bg);
+      background: var(--c-white);
       border: 1px solid var(--c-border);
-      border-radius: 8px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      border-radius: 4px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
       z-index: 100;
       max-height: 240px;
       overflow: hidden;
     }
-    .swatch-dropdown.open { display: block; }
-    .swatch-dropdown-tabs {
+    .dropdown-panel.open { display: block; }
+    .dd-tabs {
       display: flex;
       border-bottom: 1px solid var(--c-border);
-      padding: 4px 8px 0;
+      padding: 0 8px;
     }
-    .swatch-dropdown-tab {
-      padding: 4px 12px;
-      font-size: 11px;
-      font-weight: 500;
+    .dd-tab {
+      padding: 6px 12px 4px;
+      font-size: 12px;
+      font-weight: 400;
       color: var(--c-text3);
       border: none;
       background: none;
@@ -232,111 +239,87 @@
       border-bottom: 2px solid transparent;
       font-family: inherit;
     }
-    .swatch-dropdown-tab.active {
+    .dd-tab.active {
       color: var(--c-text);
-      border-bottom-color: var(--c-accent);
+      border-bottom-color: var(--c-text);
     }
-    .swatch-dropdown-list {
+    .dd-list {
       overflow-y: auto;
       max-height: 200px;
-      padding: 4px 0;
     }
-    .swatch-dropdown-item {
+    .dd-item {
       display: flex;
       align-items: center;
       gap: 8px;
-      padding: 6px 12px;
+      padding: 8px 12px;
       cursor: pointer;
-      transition: background 0.1s;
     }
-    .swatch-dropdown-item:hover { background: var(--c-bg2); }
-    .swatch-dropdown-item .sdi-color {
+    .dd-item:hover { background: var(--c-bg2); }
+    .dd-item .dd-swatch {
       width: 13px;
       height: 13px;
-      border-radius: 3px;
-      border: 1px solid rgba(0,0,0,0.08);
       flex-shrink: 0;
     }
-    .swatch-dropdown-item .sdi-info {
-      display: flex;
-      flex-direction: column;
-      min-width: 0;
-    }
-    .swatch-dropdown-item .sdi-name {
-      font-size: 11px;
-      color: var(--c-text);
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-    .swatch-dropdown-item .sdi-hex {
-      font-size: 10px;
-      color: var(--c-text3);
-      font-family: 'SF Mono', 'Menlo', 'Consolas', monospace;
-    }
+    .dd-item .dd-info { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+    .dd-item .dd-name { font-size: 12px; color: var(--c-text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .dd-item .dd-hex { font-size: 11px; color: var(--c-text3); }
 
-    /* On this page swatches */
-    .swatch-label {
-      font-size: 10px;
-      color: var(--c-text3);
-      font-weight: 500;
-      margin-bottom: 4px;
+    .swatch-section-label {
+      font-size: 12px;
+      color: var(--c-text2);
+      margin-bottom: 8px;
     }
-    .swatch-grid {
+    .swatch-grid-container {
+      background: var(--c-bg2);
+      border-radius: 4px;
+      padding: 6px 8px 7px;
       display: flex;
       flex-wrap: wrap;
-      gap: 2px;
+      gap: 8px;
     }
-    .swatch {
+    .swatch-item {
       width: 14px;
       height: 14px;
-      border-radius: 3px;
-      border: 1px solid rgba(0,0,0,0.06);
+      border: 1px solid rgba(119,119,121,0.6);
       cursor: pointer;
-      transition: all 0.1s;
+      transition: transform 0.1s;
     }
-    .swatch:hover {
-      transform: scale(1.2);
-      z-index: 1;
-    }
-    .swatch.active {
-      border-color: var(--c-text);
-      box-shadow: 0 0 0 1px var(--c-accent-soft);
-    }
-    .no-swatches { font-size: 10px; color: var(--c-text3); }
+    .swatch-item:hover { transform: scale(1.2); z-index: 1; }
+    .swatch-item.active { border-color: var(--c-text); box-shadow: 0 0 0 1px var(--c-white); }
+    .no-swatches { font-size: 11px; color: var(--c-text3); padding: 4px; }
 
-    /* ---- Stroke section ---- */
-    .stroke-top-row {
+    /* ---- Stroke ---- */
+    .stroke-top {
       display: flex;
       align-items: center;
-      gap: 12px;
-      margin-bottom: 10px;
+      gap: 16px;
+      margin-bottom: 16px;
     }
-    .weight-group {
+    .weight-row {
       display: flex;
       align-items: center;
-      gap: 6px;
+      gap: 10px;
+      padding: 3px 0;
     }
-    .weight-group label {
-      font-size: 11px;
+    .weight-row label {
+      font-size: 12px;
       color: var(--c-text2);
     }
-    .weight-input {
+    .weight-box {
       display: flex;
       align-items: center;
-      border: 1px solid var(--c-border);
-      border-radius: 5px;
-      padding: 2px 8px;
-      height: 23px;
-      gap: 3px;
-      background: var(--c-bg);
+      gap: 4px;
+      background: var(--c-bg2);
+      border-radius: 4px;
+      padding: 5px 8px 6px;
+      width: 64px;
     }
-    .weight-input .w-prefix {
-      font-size: 11px;
-      color: var(--c-text2);
+    .weight-box .w-prefix {
+      font-size: 12px;
       font-weight: 500;
+      color: var(--c-text2);
     }
-    .weight-input input {
+    .weight-box input {
       width: 24px;
       border: none;
       background: none;
@@ -344,25 +327,30 @@
       font-family: inherit;
       color: var(--c-text);
       outline: none;
-      text-align: left;
     }
-    .weight-input input::-webkit-inner-spin-button { -webkit-appearance: none; }
+    .weight-box input::-webkit-inner-spin-button { -webkit-appearance: none; }
 
-    .toggle-inline {
+    /* Small toggle 24x12 */
+    .toggle-field {
       display: flex;
       align-items: center;
-      gap: 6px;
+      gap: 4px;
     }
-    .toggle-inline label {
-      font-size: 11px;
+    .toggle-field .tf-label {
+      font-size: 12px;
       color: var(--c-text2);
     }
-    .toggle-sm {
-      position: relative;
-      width: 28px;
-      height: 16px;
+    .toggle-field .tf-colon {
+      font-size: 12px;
+      color: var(--c-text2);
     }
-    .toggle-sm input {
+    .toggle-mini {
+      position: relative;
+      width: 24px;
+      height: 12px;
+      flex-shrink: 0;
+    }
+    .toggle-mini input {
       opacity: 0;
       position: absolute;
       width: 100%;
@@ -371,93 +359,99 @@
       cursor: pointer;
       z-index: 1;
     }
-    .toggle-sm .slider {
+    .toggle-mini .tslider {
       position: absolute;
       inset: 0;
-      background: var(--c-border);
-      border-radius: 16px;
+      background: var(--c-text2);
+      border-radius: 9999px;
       transition: 0.2s;
     }
-    .toggle-sm .slider::before {
+    .toggle-mini .tslider::before {
       content: "";
       position: absolute;
-      width: 12px;
-      height: 12px;
-      left: 2px;
-      bottom: 2px;
-      background: var(--c-bg);
+      width: 10px;
+      height: 10px;
+      left: 1px;
+      top: 1px;
+      background: var(--c-white);
       border-radius: 50%;
       transition: 0.2s;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.15);
     }
-    .toggle-sm input:checked + .slider { background: var(--c-accent); }
-    .toggle-sm input:checked + .slider::before { transform: translateX(12px); }
+    .toggle-mini input:checked + .tslider { background: var(--c-text); }
+    .toggle-mini input:checked + .tslider::before { transform: translateX(12px); }
 
-    /* Arrow direction */
+    /* Arrow dir segmented */
     .arrow-dir {
       display: flex;
-      gap: 2px;
+      gap: 8px;
       background: var(--c-bg2);
-      border-radius: var(--radius);
-      padding: 3px;
-      margin-bottom: 10px;
+      border-radius: 4px;
+      padding: 4px 3px;
+      margin-bottom: 16px;
     }
     .arrow-dir-btn {
       flex: 1;
       height: 26px;
       border: none;
-      border-radius: 5px;
-      background: transparent;
+      border-radius: 4px;
+      background: var(--c-white);
       cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
+      padding: 4px 16px;
+      box-shadow: 0 1px 4px rgba(12,12,13,0.05);
       transition: all 0.12s;
-      padding: 0;
     }
-    .arrow-dir-btn:hover { background: var(--c-bg-hover); }
+    .arrow-dir-btn:hover { background: #f8f8f8; }
     .arrow-dir-btn.active {
-      background: var(--c-bg);
-      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+      background: var(--c-white);
+      box-shadow: 0 1px 4px rgba(12,12,13,0.05);
     }
     .arrow-dir-btn svg {
-      width: 24px; height: 12px;
-      stroke: var(--c-text3); fill: var(--c-text3);
+      width: 24px;
+      height: 18px;
+      stroke: var(--c-text2);
+      fill: var(--c-text2);
     }
-    .arrow-dir-btn.active svg { stroke: var(--c-text); fill: var(--c-text); }
+    .arrow-dir-btn.active svg {
+      stroke: var(--c-text);
+      fill: var(--c-text);
+    }
 
     .divider {
       height: 1px;
       background: var(--c-border);
-      margin: 10px 0;
+      margin: 16px 0;
     }
 
-    /* Bend row */
-    .bend-row {
+    /* Break Point */
+    .bend-section {
       display: flex;
       flex-direction: column;
-      gap: 4px;
+      gap: 8px;
     }
     .bend-top {
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 16px;
     }
     .bend-top label {
-      font-size: 11px;
+      font-size: 12px;
       color: var(--c-text2);
     }
-    .bend-input {
+    .bend-box {
       display: flex;
       align-items: center;
-      border: 1px solid var(--c-border);
-      border-radius: 5px;
-      padding: 0 6px;
-      height: 17px;
-      gap: 2px;
-      background: var(--c-bg);
+      gap: 4px;
+      background: var(--c-bg2);
+      border-radius: 4px;
+      padding: 2px 8px 3px;
+      width: 64px;
     }
-    .bend-input input {
-      width: 20px;
+    .bend-box input {
+      width: 22px;
       border: none;
       background: none;
       font-size: 11px;
@@ -465,79 +459,83 @@
       color: var(--c-text);
       outline: none;
     }
-    .bend-input input::-webkit-inner-spin-button { -webkit-appearance: none; }
-    .bend-input .unit { font-size: 11px; color: var(--c-text2); }
+    .bend-box input::-webkit-inner-spin-button { -webkit-appearance: none; }
+    .bend-box .unit {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--c-text2);
+    }
 
-    /* Custom slider */
+    /* Custom slider matching Figma design */
     .custom-slider {
       -webkit-appearance: none;
       width: 100%;
-      height: 6px;
-      border-radius: 3px;
-      background: var(--c-accent);
+      height: 8px;
+      border-radius: 9999px;
+      background: var(--c-bg2);
       outline: none;
+      position: relative;
     }
     .custom-slider::-webkit-slider-thumb {
       -webkit-appearance: none;
       width: 10px;
       height: 10px;
       border-radius: 50%;
-      background: var(--c-bg);
-      border: 2px solid var(--c-accent);
+      background: var(--c-text);
       cursor: pointer;
+      position: relative;
+      z-index: 2;
     }
 
-    /* ---- Label section ---- */
+    /* ---- Label ---- */
     .label-input {
       width: 100%;
       height: 28px;
       border: 1px solid var(--c-border);
-      border-radius: 6px;
-      padding: 0 12px;
+      border-radius: 4px;
+      padding: 6px 16px;
       font-size: 12px;
       font-family: inherit;
-      background: var(--c-bg);
+      background: var(--c-white);
       color: var(--c-text);
       outline: none;
-      transition: border-color 0.15s;
     }
-    .label-input:focus { border-color: var(--c-accent); }
+    .label-input:focus { border-color: var(--c-text2); }
     .label-input::placeholder { color: var(--c-text3); }
 
     /* ---- Buttons ---- */
     .btn {
       width: 100%;
-      padding: 12px;
+      padding: 14px;
       border: none;
-      border-radius: var(--radius);
+      border-radius: 4px;
       font-size: 13px;
-      font-weight: 600;
+      font-weight: 500;
       font-family: inherit;
       cursor: pointer;
       transition: all 0.15s;
     }
     .btn-primary {
-      background: var(--c-accent);
-      color: #fff;
+      background: var(--c-text);
+      color: var(--c-white);
     }
-    .btn-primary:hover { background: var(--c-accent-hover); }
+    .btn-primary:hover { background: #333; }
     .btn-primary:disabled {
       background: var(--c-bg2);
       color: var(--c-text3);
       cursor: not-allowed;
     }
     .btn-outline {
-      background: var(--c-bg);
+      background: var(--c-white);
       color: var(--c-text);
       border: 1px solid var(--c-border);
     }
     .btn-outline:hover { background: var(--c-bg2); }
     .btn-row {
       display: flex;
-      gap: 8px;
+      gap: 10px;
     }
     .btn-row .btn { flex: 1; }
-
     .hint {
       font-size: 11px;
       color: var(--c-text3);
@@ -551,14 +549,14 @@
   <div id="createMode">
     <div class="section">
       <div class="section-title">Frame</div>
-      <div class="frame-area">
-        <button class="swap-btn" id="swapBtn" title="Swap start / end">
+      <div class="frame-container">
+        <button class="swap-btn" id="swapBtn">
           <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
             <path d="M4 2 L4 14 M4 14 L7 11 M4 14 L1 11"/>
             <path d="M12 14 L12 2 M12 2 L9 5 M12 2 L15 5"/>
           </svg>
         </button>
-        <div class="frame-list" id="frameList">
+        <div class="frame-rows" id="frameList">
           <div class="empty-state">Select 2 frames</div>
         </div>
       </div>
@@ -567,72 +565,72 @@
     <div class="section">
       <div class="section-title">Color</div>
       <div class="color-row">
-        <div class="color-input-wrap">
-          <div class="color-swatch" id="colorSwatch" style="background:#333333"></div>
+        <div class="color-input-box" id="colorBox">
+          <div class="swatch-preview" id="colorSwatch" style="background:#333333"></div>
           <input type="color" id="colorPicker" value="#333333" />
           <span class="hash">#</span>
-          <span class="hex-text" id="colorHex">333333</span>
+          <span class="hex-val" id="colorHex">333333</span>
         </div>
-        <div class="style-select" id="styleSelect">
+        <div class="style-dropdown-btn" id="styleSelect">
           <span>Select Style/variable</span>
-          <svg class="chevron" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 5l3 3 3-3"/></svg>
-          <div class="swatch-dropdown" id="swatchDropdown">
-            <div class="swatch-dropdown-tabs" id="swatchTabs">
-              <button class="swatch-dropdown-tab active" data-tab="styles">Style</button>
-              <button class="swatch-dropdown-tab" data-tab="variables">Variable</button>
+          <svg class="chevron" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 4.5l3 3 3-3"/></svg>
+          <div class="dropdown-panel" id="dropdownPanel">
+            <div class="dd-tabs" id="ddTabs">
+              <button class="dd-tab active" data-tab="styles">Style</button>
+              <button class="dd-tab" data-tab="variables">Variable</button>
             </div>
-            <div class="swatch-dropdown-list" id="swatchList"></div>
+            <div class="dd-list" id="ddList"></div>
           </div>
         </div>
       </div>
-      <div class="swatch-label">On this page</div>
-      <div class="swatch-grid" id="swatchGrid"></div>
+      <div class="swatch-section-label">On this page</div>
+      <div class="swatch-grid-container" id="swatchGrid"></div>
     </div>
 
     <div class="section">
       <div class="section-title">Stroke</div>
-      <div class="stroke-top-row">
-        <div class="weight-group">
+      <div class="stroke-top">
+        <div class="weight-row">
           <label>Weight</label>
-          <div class="weight-input">
+          <div class="weight-box">
             <span class="w-prefix">W</span>
             <input type="number" id="strokeWeight" min="1" max="20" value="2" />
           </div>
         </div>
-        <div class="toggle-inline">
-          <label>Dashed:</label>
-          <div class="toggle-sm">
+        <div class="toggle-field">
+          <span class="tf-label">Dashed</span><span class="tf-colon">:</span>
+          <div class="toggle-mini">
             <input type="checkbox" id="dashed" />
-            <span class="slider"></span>
+            <span class="tslider"></span>
           </div>
         </div>
       </div>
       <div class="arrow-dir" id="arrowDir">
-        <button class="arrow-dir-btn" data-value="none" title="No arrow">
-          <svg viewBox="0 0 24 12" fill="none"><line x1="2" y1="6" x2="22" y2="6" stroke-width="1.5" stroke-linecap="round"/></svg>
+        <button class="arrow-dir-btn" data-value="none">
+          <svg viewBox="0 0 24 18" fill="none"><line x1="2" y1="9" x2="22" y2="9" stroke-width="1.5" stroke-linecap="round"/></svg>
         </button>
-        <button class="arrow-dir-btn" data-value="start" title="Start only">
-          <svg viewBox="0 0 24 12"><line x1="6" y1="6" x2="22" y2="6" stroke-width="1.5" stroke-linecap="round" fill="none"/><polygon points="2,6 8,2 8,10" stroke="none"/></svg>
+        <button class="arrow-dir-btn" data-value="start">
+          <svg viewBox="0 0 24 18"><line x1="8" y1="9" x2="22" y2="9" stroke-width="1.5" stroke-linecap="round" fill="none"/><polygon points="2,9 8,5 8,13" stroke="none"/></svg>
         </button>
-        <button class="arrow-dir-btn active" data-value="end" title="End only">
-          <svg viewBox="0 0 24 12"><line x1="2" y1="6" x2="18" y2="6" stroke-width="1.5" stroke-linecap="round" fill="none"/><polygon points="22,6 16,2 16,10" stroke="none"/></svg>
+        <button class="arrow-dir-btn active" data-value="end">
+          <svg viewBox="0 0 24 18"><line x1="2" y1="9" x2="16" y2="9" stroke-width="1.5" stroke-linecap="round" fill="none"/><polygon points="22,9 16,5 16,13" stroke="none"/></svg>
         </button>
-        <button class="arrow-dir-btn" data-value="both" title="Both">
-          <svg viewBox="0 0 24 12"><line x1="6" y1="6" x2="18" y2="6" stroke-width="1.5" stroke-linecap="round" fill="none"/><polygon points="22,6 16,2 16,10" stroke="none"/><polygon points="2,6 8,2 8,10" stroke="none"/></svg>
+        <button class="arrow-dir-btn" data-value="both">
+          <svg viewBox="0 0 24 18"><line x1="8" y1="9" x2="16" y2="9" stroke-width="1.5" stroke-linecap="round" fill="none"/><polygon points="22,9 16,5 16,13" stroke="none"/><polygon points="2,9 8,5 8,13" stroke="none"/></svg>
         </button>
       </div>
       <div class="divider"></div>
-      <div class="toggle-inline" style="margin-bottom:10px;">
-        <label>Curved:</label>
-        <div class="toggle-sm">
+      <div class="toggle-field" style="margin-bottom:16px;">
+        <span class="tf-label">Curved</span><span class="tf-colon">:</span>
+        <div class="toggle-mini">
           <input type="checkbox" id="curved" />
-          <span class="slider"></span>
+          <span class="tslider"></span>
         </div>
       </div>
-      <div class="bend-row" id="bendRow">
+      <div class="bend-section" id="bendRow">
         <div class="bend-top">
           <label>Break Point</label>
-          <div class="bend-input">
+          <div class="bend-box">
             <input type="number" id="bendPositionInput" min="5" max="95" value="50" />
             <span class="unit">%</span>
           </div>
@@ -655,86 +653,86 @@
   <div id="editMode" style="display:none;">
     <div class="section">
       <div class="section-title">Frame</div>
-      <div class="frame-area">
-        <button class="swap-btn" id="editSwapBtn" title="Swap start / end">
+      <div class="frame-container">
+        <button class="swap-btn" id="editSwapBtn">
           <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
             <path d="M4 2 L4 14 M4 14 L7 11 M4 14 L1 11"/>
             <path d="M12 14 L12 2 M12 2 L9 5 M12 2 L15 5"/>
           </svg>
         </button>
-        <div class="frame-list" id="editFrameList"></div>
+        <div class="frame-rows" id="editFrameList"></div>
       </div>
     </div>
 
     <div class="section">
       <div class="section-title">Color</div>
       <div class="color-row">
-        <div class="color-input-wrap">
-          <div class="color-swatch" id="editColorSwatch" style="background:#333333"></div>
+        <div class="color-input-box" id="editColorBox">
+          <div class="swatch-preview" id="editColorSwatch" style="background:#333333"></div>
           <input type="color" id="editColorPicker" value="#333333" />
           <span class="hash">#</span>
-          <span class="hex-text" id="editColorHex">333333</span>
+          <span class="hex-val" id="editColorHex">333333</span>
         </div>
-        <div class="style-select" id="editStyleSelect">
+        <div class="style-dropdown-btn" id="editStyleSelect">
           <span>Select Style/variable</span>
-          <svg class="chevron" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 5l3 3 3-3"/></svg>
-          <div class="swatch-dropdown" id="editSwatchDropdown">
-            <div class="swatch-dropdown-tabs" id="editSwatchTabs">
-              <button class="swatch-dropdown-tab active" data-tab="styles">Style</button>
-              <button class="swatch-dropdown-tab" data-tab="variables">Variable</button>
+          <svg class="chevron" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 4.5l3 3 3-3"/></svg>
+          <div class="dropdown-panel" id="editDropdownPanel">
+            <div class="dd-tabs" id="editDdTabs">
+              <button class="dd-tab active" data-tab="styles">Style</button>
+              <button class="dd-tab" data-tab="variables">Variable</button>
             </div>
-            <div class="swatch-dropdown-list" id="editSwatchList"></div>
+            <div class="dd-list" id="editDdList"></div>
           </div>
         </div>
       </div>
-      <div class="swatch-label">On this page</div>
-      <div class="swatch-grid" id="editSwatchGrid"></div>
+      <div class="swatch-section-label">On this page</div>
+      <div class="swatch-grid-container" id="editSwatchGrid"></div>
     </div>
 
     <div class="section">
       <div class="section-title">Stroke</div>
-      <div class="stroke-top-row">
-        <div class="weight-group">
+      <div class="stroke-top">
+        <div class="weight-row">
           <label>Weight</label>
-          <div class="weight-input">
+          <div class="weight-box">
             <span class="w-prefix">W</span>
             <input type="number" id="editStrokeWeight" min="1" max="20" value="2" />
           </div>
         </div>
-        <div class="toggle-inline">
-          <label>Dashed:</label>
-          <div class="toggle-sm">
+        <div class="toggle-field">
+          <span class="tf-label">Dashed</span><span class="tf-colon">:</span>
+          <div class="toggle-mini">
             <input type="checkbox" id="editDashed" />
-            <span class="slider"></span>
+            <span class="tslider"></span>
           </div>
         </div>
       </div>
       <div class="arrow-dir" id="editArrowDir">
-        <button class="arrow-dir-btn" data-value="none" title="No arrow">
-          <svg viewBox="0 0 24 12" fill="none"><line x1="2" y1="6" x2="22" y2="6" stroke-width="1.5" stroke-linecap="round"/></svg>
+        <button class="arrow-dir-btn" data-value="none">
+          <svg viewBox="0 0 24 18" fill="none"><line x1="2" y1="9" x2="22" y2="9" stroke-width="1.5" stroke-linecap="round"/></svg>
         </button>
-        <button class="arrow-dir-btn" data-value="start" title="Start only">
-          <svg viewBox="0 0 24 12"><line x1="6" y1="6" x2="22" y2="6" stroke-width="1.5" stroke-linecap="round" fill="none"/><polygon points="2,6 8,2 8,10" stroke="none"/></svg>
+        <button class="arrow-dir-btn" data-value="start">
+          <svg viewBox="0 0 24 18"><line x1="8" y1="9" x2="22" y2="9" stroke-width="1.5" stroke-linecap="round" fill="none"/><polygon points="2,9 8,5 8,13" stroke="none"/></svg>
         </button>
-        <button class="arrow-dir-btn active" data-value="end" title="End only">
-          <svg viewBox="0 0 24 12"><line x1="2" y1="6" x2="18" y2="6" stroke-width="1.5" stroke-linecap="round" fill="none"/><polygon points="22,6 16,2 16,10" stroke="none"/></svg>
+        <button class="arrow-dir-btn active" data-value="end">
+          <svg viewBox="0 0 24 18"><line x1="2" y1="9" x2="16" y2="9" stroke-width="1.5" stroke-linecap="round" fill="none"/><polygon points="22,9 16,5 16,13" stroke="none"/></svg>
         </button>
-        <button class="arrow-dir-btn" data-value="both" title="Both">
-          <svg viewBox="0 0 24 12"><line x1="6" y1="6" x2="18" y2="6" stroke-width="1.5" stroke-linecap="round" fill="none"/><polygon points="22,6 16,2 16,10" stroke="none"/><polygon points="2,6 8,2 8,10" stroke="none"/></svg>
+        <button class="arrow-dir-btn" data-value="both">
+          <svg viewBox="0 0 24 18"><line x1="8" y1="9" x2="16" y2="9" stroke-width="1.5" stroke-linecap="round" fill="none"/><polygon points="22,9 16,5 16,13" stroke="none"/><polygon points="2,9 8,5 8,13" stroke="none"/></svg>
         </button>
       </div>
       <div class="divider"></div>
-      <div class="toggle-inline" style="margin-bottom:10px;">
-        <label>Curved:</label>
-        <div class="toggle-sm">
+      <div class="toggle-field" style="margin-bottom:16px;">
+        <span class="tf-label">Curved</span><span class="tf-colon">:</span>
+        <div class="toggle-mini">
           <input type="checkbox" id="editCurved" />
-          <span class="slider"></span>
+          <span class="tslider"></span>
         </div>
       </div>
-      <div class="bend-row" id="editBendRow">
+      <div class="bend-section" id="editBendRow">
         <div class="bend-top">
           <label>Break Point</label>
-          <div class="bend-input">
+          <div class="bend-box">
             <input type="number" id="editBendPositionInput" min="5" max="95" value="50" />
             <span class="unit">%</span>
           </div>
@@ -756,78 +754,68 @@
   </div>
 
   <script>
-    // ---- Inline Point Picker ----
-    const PP_POSITIONS = {
-      'top-left':     { left: 2, top: 2 },
-      'top':          { left: 12.5, top: 2 },
-      'top-right':    { left: 23, top: 2 },
-      'left':         { left: 2, top: 12.5 },
-      'right':        { left: 23, top: 12.5 },
-      'bottom-left':  { left: 2, top: 23 },
-      'bottom':       { left: 12.5, top: 23 },
-      'bottom-right': { left: 23, top: 23 },
+    // ---- Inline Point Picker 25x25 ----
+    const PP_POS = {
+      'top-left':    { left: 2, top: 2 },
+      'top':         { left: 12.5, top: 2 },
+      'top-right':   { left: 23, top: 2 },
+      'left':        { left: 2, top: 12.5 },
+      'right':       { left: 23, top: 12.5 },
+      'bottom-left': { left: 2, top: 23 },
+      'bottom':      { left: 12.5, top: 23 },
+      'bottom-right':{ left: 23, top: 23 },
     };
 
-    function createInlinePicker(container) {
+    function createInlinePicker(container, accentColor) {
       const wrap = document.createElement('div');
-      wrap.className = 'pp-inline auto-mode';
-
+      wrap.className = 'pp-inline';
       const rect = document.createElement('div');
       rect.className = 'pp-rect';
       wrap.appendChild(rect);
-
-      let selectedValue = 'auto';
-      let onChangeCb = null;
+      let selected = 'auto';
+      let cb = null;
       const dots = {};
-
-      for (const [pos, coords] of Object.entries(PP_POSITIONS)) {
-        const dot = document.createElement('div');
-        dot.className = 'pp-dot';
-        dot.style.left = coords.left + 'px';
-        dot.style.top = coords.top + 'px';
-        dot.title = pos;
-        dot.addEventListener('click', (e) => {
+      for (const [pos, c] of Object.entries(PP_POS)) {
+        const d = document.createElement('div');
+        d.className = 'pp-dot';
+        d.style.left = c.left + 'px';
+        d.style.top = c.top + 'px';
+        d.title = pos;
+        d.addEventListener('click', (e) => {
           e.stopPropagation();
-          selectedValue = selectedValue === pos ? 'auto' : pos;
-          updateVisuals();
-          if (onChangeCb) onChangeCb();
+          selected = selected === pos ? 'auto' : pos;
+          upd();
+          if (cb) cb();
         });
-        wrap.appendChild(dot);
-        dots[pos] = dot;
+        wrap.appendChild(d);
+        dots[pos] = d;
       }
-
-      function updateVisuals() {
-        for (const d of Object.values(dots)) {
-          d.classList.remove('active');
+      function upd() {
+        for (const dd of Object.values(dots)) {
+          dd.classList.remove('active');
+          dd.style.background = '';
+          dd.style.borderColor = '';
         }
-        if (selectedValue === 'auto') {
-          wrap.classList.add('auto-mode');
-        } else {
-          wrap.classList.remove('auto-mode');
-          if (dots[selectedValue]) dots[selectedValue].classList.add('active');
+        if (selected !== 'auto' && dots[selected]) {
+          dots[selected].classList.add('active');
+          dots[selected].style.background = accentColor;
+          dots[selected].style.borderColor = accentColor;
         }
       }
-
-      updateVisuals();
+      upd();
       container.appendChild(wrap);
-
       return {
-        getValue() { return selectedValue; },
-        setValue(val) { selectedValue = val || 'auto'; updateVisuals(); },
-        onChange(cb) { onChangeCb = cb; },
-        element: wrap,
+        getValue() { return selected; },
+        setValue(v) { selected = v || 'auto'; upd(); },
+        onChange(fn) { cb = fn; },
       };
     }
 
-    // Picker instances (created dynamically when frames appear)
-    let startPicker = null;
-    let endPicker = null;
-    let editStartPicker = null;
-    let editEndPicker = null;
-
-    // ---- Main Logic ----
+    // ---- State ----
     let frames = [];
     let currentArrowId = null;
+    let startPicker = null, endPicker = null;
+    let editStartPicker = null, editEndPicker = null;
 
     const createMode = document.getElementById('createMode');
     const editMode = document.getElementById('editMode');
@@ -838,29 +826,30 @@
     const editStrokeWeight = document.getElementById('editStrokeWeight');
     const editFrameList = document.getElementById('editFrameList');
 
-    // Bend slider sync
+    // Bend
     const bendPosition = document.getElementById('bendPosition');
-    const bendPositionInput = document.getElementById('bendPositionInput');
+    const bendInput = document.getElementById('bendPositionInput');
     const bendRow = document.getElementById('bendRow');
     const editBendPosition = document.getElementById('editBendPosition');
-    const editBendPositionInput = document.getElementById('editBendPositionInput');
+    const editBendInput = document.getElementById('editBendPositionInput');
     const editBendRow = document.getElementById('editBendRow');
 
-    bendPosition.addEventListener('input', () => { bendPositionInput.value = bendPosition.value; });
-    bendPositionInput.addEventListener('change', () => { bendPosition.value = bendPositionInput.value; });
-    editBendPosition.addEventListener('input', () => { editBendPositionInput.value = editBendPosition.value; });
-    editBendPositionInput.addEventListener('change', () => { editBendPosition.value = editBendPositionInput.value; });
+    bendPosition.addEventListener('input', () => { bendInput.value = bendPosition.value; updateSliderBg(bendPosition); });
+    bendInput.addEventListener('change', () => { bendPosition.value = bendInput.value; updateSliderBg(bendPosition); });
+    editBendPosition.addEventListener('input', () => { editBendInput.value = editBendPosition.value; updateSliderBg(editBendPosition); });
+    editBendInput.addEventListener('change', () => { editBendPosition.value = editBendInput.value; updateSliderBg(editBendPosition); });
 
-    function updateBendVisibility(curvedCheckbox, row) {
-      row.style.display = curvedCheckbox.checked ? 'none' : '';
+    function updateSliderBg(slider) {
+      const pct = (slider.value - slider.min) / (slider.max - slider.min) * 100;
+      slider.style.background = `linear-gradient(to right, #232324 0%, #232324 ${pct}%, #f0f0f0 ${pct}%, #f0f0f0 100%)`;
     }
-    document.getElementById('curved').addEventListener('change', function() {
-      updateBendVisibility(this, bendRow);
-    });
-    document.getElementById('editCurved').addEventListener('change', function() {
-      updateBendVisibility(this, editBendRow);
-    });
-    updateBendVisibility(document.getElementById('curved'), bendRow);
+    updateSliderBg(bendPosition);
+    updateSliderBg(editBendPosition);
+
+    function updateBendVis(cb, row) { row.style.display = cb.checked ? 'none' : ''; }
+    document.getElementById('curved').addEventListener('change', function() { updateBendVis(this, bendRow); });
+    document.getElementById('editCurved').addEventListener('change', function() { updateBendVis(this, editBendRow); });
+    updateBendVis(document.getElementById('curved'), bendRow);
 
     // ---- Color ----
     const colorPicker = document.getElementById('colorPicker');
@@ -870,143 +859,101 @@
     const editColorHex = document.getElementById('editColorHex');
     const editColorSwatch = document.getElementById('editColorSwatch');
 
-    function updateColorDisplay(picker, hex, swatch) {
-      hex.textContent = picker.value.replace('#', '');
+    function syncColor(picker, hex, swatch) {
+      hex.textContent = picker.value.replace('#','');
       swatch.style.background = picker.value;
     }
-    colorPicker.addEventListener('input', () => updateColorDisplay(colorPicker, colorHex, colorSwatch));
-    editColorPicker.addEventListener('input', () => updateColorDisplay(editColorPicker, editColorHex, editColorSwatch));
+    colorPicker.addEventListener('input', () => syncColor(colorPicker, colorHex, colorSwatch));
+    editColorPicker.addEventListener('input', () => syncColor(editColorPicker, editColorHex, editColorSwatch));
+    document.getElementById('colorBox').addEventListener('click', () => colorPicker.click());
+    document.getElementById('editColorBox').addEventListener('click', () => editColorPicker.click());
 
-    colorSwatch.addEventListener('click', () => colorPicker.click());
-    editColorSwatch.addEventListener('click', () => editColorPicker.click());
-
-    // ---- Style/Variable dropdown ----
+    // ---- Style dropdown ----
     let allSwatches = [];
-    let activeTab = 'styles';
 
-    function setupDropdown(selectId, dropdownId, tabsId, listId, pickerId, hexId, swatchId) {
-      const select = document.getElementById(selectId);
-      const dropdown = document.getElementById(dropdownId);
+    function setupDD(selId, panelId, tabsId, listId, pickerId, hexId, swatchId) {
+      const sel = document.getElementById(selId);
+      const panel = document.getElementById(panelId);
       const tabs = document.getElementById(tabsId);
       const list = document.getElementById(listId);
-      let currentTab = 'styles';
+      let tab = 'styles';
 
-      select.addEventListener('click', (e) => {
+      sel.addEventListener('click', (e) => {
         e.stopPropagation();
-        // Close other dropdowns
-        document.querySelectorAll('.swatch-dropdown').forEach(d => {
-          if (d !== dropdown) d.classList.remove('open');
-        });
-        dropdown.classList.toggle('open');
-        if (dropdown.classList.contains('open')) renderList();
+        document.querySelectorAll('.dropdown-panel').forEach(d => { if (d !== panel) d.classList.remove('open'); });
+        panel.classList.toggle('open');
+        if (panel.classList.contains('open')) render();
       });
-
       tabs.addEventListener('click', (e) => {
-        const tab = e.target.closest('.swatch-dropdown-tab');
-        if (!tab) return;
+        const t = e.target.closest('.dd-tab');
+        if (!t) return;
         e.stopPropagation();
-        currentTab = tab.dataset.tab;
-        tabs.querySelectorAll('.swatch-dropdown-tab').forEach(t => t.classList.remove('active'));
-        tab.classList.add('active');
-        renderList();
+        tab = t.dataset.tab;
+        tabs.querySelectorAll('.dd-tab').forEach(x => x.classList.remove('active'));
+        t.classList.add('active');
+        render();
       });
-
-      function renderList() {
+      function render() {
         list.innerHTML = '';
-        const items = allSwatches.filter(s => s.group === currentTab);
-        if (items.length === 0) {
-          list.innerHTML = '<div style="padding:12px;text-align:center;color:var(--c-text3);font-size:11px;">No items</div>';
-          return;
-        }
-        for (const item of items) {
+        const items = allSwatches.filter(s => s.group === tab);
+        if (!items.length) { list.innerHTML = '<div style="padding:12px;text-align:center;color:#b9b9b9;font-size:11px">No items</div>'; return; }
+        for (const it of items) {
           const el = document.createElement('div');
-          el.className = 'swatch-dropdown-item';
-          el.innerHTML = `
-            <div class="sdi-color" style="background:${item.hex}"></div>
-            <div class="sdi-info">
-              <div class="sdi-name">${item.name}</div>
-              <div class="sdi-hex">${item.hex}</div>
-            </div>`;
+          el.className = 'dd-item';
+          el.innerHTML = `<div class="dd-swatch" style="background:${it.hex}"></div><div class="dd-info"><div class="dd-name">${it.name}</div><div class="dd-hex">${it.hex}</div></div>`;
           el.addEventListener('click', (e) => {
             e.stopPropagation();
-            document.getElementById(pickerId).value = item.hex;
-            document.getElementById(hexId).textContent = item.hex.replace('#', '');
-            document.getElementById(swatchId).style.background = item.hex;
-            dropdown.classList.remove('open');
+            document.getElementById(pickerId).value = it.hex;
+            document.getElementById(hexId).textContent = it.hex.replace('#','');
+            document.getElementById(swatchId).style.background = it.hex;
+            panel.classList.remove('open');
           });
           list.appendChild(el);
         }
       }
     }
+    setupDD('styleSelect','dropdownPanel','ddTabs','ddList','colorPicker','colorHex','colorSwatch');
+    setupDD('editStyleSelect','editDropdownPanel','editDdTabs','editDdList','editColorPicker','editColorHex','editColorSwatch');
+    document.addEventListener('click', () => { document.querySelectorAll('.dropdown-panel').forEach(d => d.classList.remove('open')); });
 
-    setupDropdown('styleSelect', 'swatchDropdown', 'swatchTabs', 'swatchList', 'colorPicker', 'colorHex', 'colorSwatch');
-    setupDropdown('editStyleSelect', 'editSwatchDropdown', 'editSwatchTabs', 'editSwatchList', 'editColorPicker', 'editColorHex', 'editColorSwatch');
-
-    // Close dropdowns on outside click
-    document.addEventListener('click', () => {
-      document.querySelectorAll('.swatch-dropdown').forEach(d => d.classList.remove('open'));
-    });
-
-    // Render flat swatch grids
     function renderSwatchGrids() {
-      ['swatchGrid', 'editSwatchGrid'].forEach((gridId, idx) => {
-        const grid = document.getElementById(gridId);
-        const pickerId = idx === 0 ? 'colorPicker' : 'editColorPicker';
-        const hexId = idx === 0 ? 'colorHex' : 'editColorHex';
-        const swatchId = idx === 0 ? 'colorSwatch' : 'editColorSwatch';
+      ['swatchGrid','editSwatchGrid'].forEach((gid, idx) => {
+        const grid = document.getElementById(gid);
+        const pid = idx === 0 ? 'colorPicker' : 'editColorPicker';
+        const hid = idx === 0 ? 'colorHex' : 'editColorHex';
+        const sid = idx === 0 ? 'colorSwatch' : 'editColorSwatch';
         grid.innerHTML = '';
-        if (allSwatches.length === 0) {
-          grid.innerHTML = '<span class="no-swatches">No styles/variables</span>';
-          return;
-        }
-        for (const item of allSwatches) {
+        if (!allSwatches.length) { grid.innerHTML = '<span class="no-swatches">No styles/variables</span>'; return; }
+        for (const it of allSwatches) {
           const sw = document.createElement('div');
-          sw.className = 'swatch';
-          sw.style.background = item.hex;
-          sw.title = item.name;
+          sw.className = 'swatch-item';
+          sw.style.background = it.hex;
+          sw.title = it.name;
           sw.addEventListener('click', () => {
-            document.getElementById(pickerId).value = item.hex;
-            document.getElementById(hexId).textContent = item.hex.replace('#', '');
-            document.getElementById(swatchId).style.background = item.hex;
-            grid.querySelectorAll('.swatch').forEach(s => s.classList.remove('active'));
-            sw.classList.add('active');
+            document.getElementById(pid).value = it.hex;
+            document.getElementById(hid).textContent = it.hex.replace('#','');
+            document.getElementById(sid).style.background = it.hex;
           });
           grid.appendChild(sw);
         }
       });
     }
 
-    // ---- Arrow direction selector ----
-    function initArrowDirSelector(containerId) {
-      const container = document.getElementById(containerId);
-      const btns = container.querySelectorAll('.arrow-dir-btn');
-      btns.forEach(btn => {
-        btn.addEventListener('click', () => {
-          btns.forEach(b => b.classList.remove('active'));
-          btn.classList.add('active');
-        });
-      });
+    // ---- Arrow dir ----
+    function initArrowDir(id) {
+      const c = document.getElementById(id);
+      const btns = c.querySelectorAll('.arrow-dir-btn');
+      btns.forEach(b => b.addEventListener('click', () => { btns.forEach(x => x.classList.remove('active')); b.classList.add('active'); }));
       return {
-        getValue() {
-          const active = container.querySelector('.arrow-dir-btn.active');
-          return active ? active.dataset.value : 'end';
-        },
-        setValue(val) {
-          btns.forEach(b => b.classList.remove('active'));
-          const target = container.querySelector(`[data-value="${val}"]`);
-          if (target) target.classList.add('active');
-        },
-        getArrows() {
-          const v = this.getValue();
-          return { startArrow: v === 'start' || v === 'both', endArrow: v === 'end' || v === 'both' };
-        },
+        getValue() { const a = c.querySelector('.arrow-dir-btn.active'); return a ? a.dataset.value : 'end'; },
+        setValue(v) { btns.forEach(x => x.classList.remove('active')); const t = c.querySelector(`[data-value="${v}"]`); if (t) t.classList.add('active'); },
+        getArrows() { const v = this.getValue(); return { startArrow: v==='start'||v==='both', endArrow: v==='end'||v==='both' }; },
       };
     }
+    const arrowDirCreate = initArrowDir('arrowDir');
+    const arrowDirEdit = initArrowDir('editArrowDir');
 
-    const arrowDirCreate = initArrowDirSelector('arrowDir');
-    const arrowDirEdit = initArrowDirSelector('editArrowDir');
-
-    // ---- Messages from plugin ----
+    // ---- Messages ----
     window.onmessage = (event) => {
       const msg = event.data.pluginMessage;
 
@@ -1028,48 +975,43 @@
         createMode.style.display = 'none';
         editMode.style.display = 'block';
 
-        // Build edit frame list with inline pickers
         editFrameList.innerHTML = '';
-        const items = [
-          { name: msg.sourceName, exists: msg.sourceExists, color: '#4D7BF3' },
-          { name: msg.targetName, exists: msg.targetExists, color: '#56B87B' },
-        ];
-        const pickerContainers = [];
-        items.forEach((item, i) => {
+        [{n: msg.sourceName, e: msg.sourceExists, c: '#6177f4'},
+         {n: msg.targetName, e: msg.targetExists, c: '#6ab39a'}].forEach((item, i) => {
+          const row = document.createElement('div');
+          row.className = 'frame-row';
           const fi = document.createElement('div');
           fi.className = 'frame-item';
-          fi.innerHTML = `
-            <div class="dot" style="background:${item.exists ? item.color : '#ccc'}"></div>
-            <span class="name">${item.name}</span>`;
-          const pickerHost = document.createElement('span');
-          fi.appendChild(pickerHost);
-          editFrameList.appendChild(fi);
-          pickerContainers.push(pickerHost);
+          fi.innerHTML = `<div class="dot" style="background:${item.e ? item.c : '#ccc'}"></div><span class="name">${item.n}</span>`;
+          row.appendChild(fi);
+          const ph = document.createElement('span');
+          row.appendChild(ph);
+          editFrameList.appendChild(row);
+          if (i === 0) editStartPicker = createInlinePicker(ph, item.c);
+          else editEndPicker = createInlinePicker(ph, item.c);
         });
-        editStartPicker = createInlinePicker(pickerContainers[0]);
-        editEndPicker = createInlinePicker(pickerContainers[1]);
 
-        const opts = msg.options;
-        document.getElementById('editColorPicker').value = opts.color;
-        document.getElementById('editColorHex').textContent = opts.color.replace('#', '');
-        document.getElementById('editColorSwatch').style.background = opts.color;
-        editStrokeWeight.value = opts.strokeWeight;
-        document.getElementById('editCurved').checked = opts.curved;
-        document.getElementById('editDashed').checked = opts.dashed;
+        const o = msg.options;
+        editColorPicker.value = o.color;
+        editColorHex.textContent = o.color.replace('#','');
+        editColorSwatch.style.background = o.color;
+        editStrokeWeight.value = o.strokeWeight;
+        document.getElementById('editCurved').checked = o.curved;
+        document.getElementById('editDashed').checked = o.dashed;
+        editStartPicker.setValue(o.startSide || 'auto');
+        editEndPicker.setValue(o.endSide || 'auto');
+        document.getElementById('editLabelInput').value = o.label || '';
 
-        editStartPicker.setValue(opts.startSide || 'auto');
-        editEndPicker.setValue(opts.endSide || 'auto');
-        document.getElementById('editLabelInput').value = opts.label || '';
-
-        if (opts.startArrow && opts.endArrow) arrowDirEdit.setValue('both');
-        else if (opts.startArrow) arrowDirEdit.setValue('start');
-        else if (opts.endArrow !== false) arrowDirEdit.setValue('end');
+        if (o.startArrow && o.endArrow) arrowDirEdit.setValue('both');
+        else if (o.startArrow) arrowDirEdit.setValue('start');
+        else if (o.endArrow !== false) arrowDirEdit.setValue('end');
         else arrowDirEdit.setValue('none');
 
-        const bp = Math.round((opts.bendPosition ?? 0.5) * 100);
+        const bp = Math.round((o.bendPosition ?? 0.5) * 100);
         editBendPosition.value = bp;
-        editBendPositionInput.value = bp;
-        updateBendVisibility(document.getElementById('editCurved'), editBendRow);
+        editBendInput.value = bp;
+        updateSliderBg(editBendPosition);
+        updateBendVis(document.getElementById('editCurved'), editBendRow);
       }
     };
 
@@ -1081,48 +1023,34 @@
         hint.textContent = 'Select 2 frames to connect';
         return;
       }
+      const colors = ['#6177f4','#6ab39a'];
+      const display = frames.slice(0, 2);
+      const oldS = startPicker ? startPicker.getValue() : (window._savedStart || 'auto');
+      const oldE = endPicker ? endPicker.getValue() : (window._savedEnd || 'auto');
 
-      const colors = ['#4D7BF3', '#56B87B'];
-      const displayFrames = frames.slice(0, 2);
-      const pickerContainers = [];
-
-      displayFrames.forEach((f, i) => {
+      display.forEach((f, i) => {
+        const row = document.createElement('div');
+        row.className = 'frame-row';
         const fi = document.createElement('div');
         fi.className = 'frame-item';
-        fi.innerHTML = `
-          <div class="dot" style="background:${colors[i] || colors[0]}"></div>
-          <span class="name">${f.name}</span>`;
-        const pickerHost = document.createElement('span');
-        fi.appendChild(pickerHost);
-        frameList.appendChild(fi);
-        pickerContainers.push(pickerHost);
+        fi.innerHTML = `<div class="dot" style="background:${colors[i]}"></div><span class="name">${f.name}</span>`;
+        row.appendChild(fi);
+        const ph = document.createElement('span');
+        row.appendChild(ph);
+        frameList.appendChild(row);
+        if (i === 0) { startPicker = createInlinePicker(ph, colors[i]); startPicker.setValue(oldS); }
+        else { endPicker = createInlinePicker(ph, colors[i]); endPicker.setValue(oldE); }
       });
 
-      // Recreate pickers, preserve values if possible
-      const oldStartVal = startPicker ? startPicker.getValue() : 'auto';
-      const oldEndVal = endPicker ? endPicker.getValue() : 'auto';
-      startPicker = createInlinePicker(pickerContainers[0]);
-      startPicker.setValue(oldStartVal);
-      if (pickerContainers[1]) {
-        endPicker = createInlinePicker(pickerContainers[1]);
-        endPicker.setValue(oldEndVal);
-      }
-
-      if (frames.length === 1) {
-        connectBtn.disabled = true;
-        hint.textContent = 'Select 1 more frame';
-      } else {
-        connectBtn.disabled = false;
-        hint.textContent = frames.length > 2 ? 'First 2 frames will be connected' : '';
-      }
+      if (frames.length === 1) { connectBtn.disabled = true; hint.textContent = 'Select 1 more frame'; }
+      else { connectBtn.disabled = false; hint.textContent = frames.length > 2 ? 'First 2 frames will be connected' : ''; }
     }
 
-    // ---- Preferences ----
+    // ---- Prefs ----
     const STORAGE_KEY = 'arrow-connector-prefs';
-
     function savePrefs() {
-      const prefs = {
-        color: document.getElementById('colorPicker').value,
+      const p = {
+        color: colorPicker.value,
         strokeWeight: parseInt(strokeWeight.value),
         curved: document.getElementById('curved').checked,
         dashed: document.getElementById('dashed').checked,
@@ -1131,80 +1059,63 @@
         arrowDirValue: arrowDirCreate.getValue(),
         bendPosition: parseInt(bendPosition.value),
       };
-      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(prefs)); } catch {}
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(p)); } catch {}
     }
-
     function loadPrefs() {
       try {
         const raw = localStorage.getItem(STORAGE_KEY);
         if (!raw) return;
         const p = JSON.parse(raw);
-        if (p.color) {
-          document.getElementById('colorPicker').value = p.color;
-          colorHex.textContent = p.color.replace('#', '');
-          colorSwatch.style.background = p.color;
-        }
-        if (p.strokeWeight) { strokeWeight.value = p.strokeWeight; }
-        if (typeof p.curved === 'boolean') { document.getElementById('curved').checked = p.curved; }
-        if (typeof p.dashed === 'boolean') { document.getElementById('dashed').checked = p.dashed; }
-        if (p.arrowDirValue !== undefined) arrowDirCreate.setValue(p.arrowDirValue);
-        if (p.bendPosition !== undefined) {
-          bendPosition.value = p.bendPosition;
-          bendPositionInput.value = p.bendPosition;
-        }
-        updateBendVisibility(document.getElementById('curved'), bendRow);
-        // startSide/endSide restored when pickers are created in updateCreateUI
-        window._savedStartSide = p.startSide;
-        window._savedEndSide = p.endSide;
+        if (p.color) { colorPicker.value = p.color; colorHex.textContent = p.color.replace('#',''); colorSwatch.style.background = p.color; }
+        if (p.strokeWeight) strokeWeight.value = p.strokeWeight;
+        if (typeof p.curved === 'boolean') document.getElementById('curved').checked = p.curved;
+        if (typeof p.dashed === 'boolean') document.getElementById('dashed').checked = p.dashed;
+        if (p.arrowDirValue) arrowDirCreate.setValue(p.arrowDirValue);
+        if (p.bendPosition) { bendPosition.value = p.bendPosition; bendInput.value = p.bendPosition; updateSliderBg(bendPosition); }
+        updateBendVis(document.getElementById('curved'), bendRow);
+        window._savedStart = p.startSide;
+        window._savedEnd = p.endSide;
       } catch {}
     }
     loadPrefs();
 
-    function getCreateOptions() {
-      const arrows = arrowDirCreate.getArrows();
-      const opts = {
-        color: document.getElementById('colorPicker').value,
-        strokeWeight: parseInt(strokeWeight.value),
-        curved: document.getElementById('curved').checked,
-        dashed: document.getElementById('dashed').checked,
+    function getCreateOpts() {
+      const a = arrowDirCreate.getArrows();
+      const o = {
+        color: colorPicker.value, strokeWeight: parseInt(strokeWeight.value),
+        curved: document.getElementById('curved').checked, dashed: document.getElementById('dashed').checked,
         startSide: startPicker ? startPicker.getValue() : 'auto',
         endSide: endPicker ? endPicker.getValue() : 'auto',
         label: document.getElementById('labelInput').value,
-        startArrow: arrows.startArrow,
-        endArrow: arrows.endArrow,
+        startArrow: a.startArrow, endArrow: a.endArrow,
         bendPosition: parseInt(bendPosition.value) / 100,
       };
       savePrefs();
-      return opts;
+      return o;
     }
-
-    function getEditOptions() {
-      const arrows = arrowDirEdit.getArrows();
-      const opts = {
-        color: document.getElementById('editColorPicker').value,
-        strokeWeight: parseInt(editStrokeWeight.value),
-        curved: document.getElementById('editCurved').checked,
-        dashed: document.getElementById('editDashed').checked,
+    function getEditOpts() {
+      const a = arrowDirEdit.getArrows();
+      const o = {
+        color: editColorPicker.value, strokeWeight: parseInt(editStrokeWeight.value),
+        curved: document.getElementById('editCurved').checked, dashed: document.getElementById('editDashed').checked,
         startSide: editStartPicker ? editStartPicker.getValue() : 'auto',
         endSide: editEndPicker ? editEndPicker.getValue() : 'auto',
         label: document.getElementById('editLabelInput').value,
-        startArrow: arrows.startArrow,
-        endArrow: arrows.endArrow,
+        startArrow: a.startArrow, endArrow: a.endArrow,
         bendPosition: parseInt(editBendPosition.value) / 100,
       };
-      // Sync to create mode
-      document.getElementById('colorPicker').value = opts.color;
-      colorHex.textContent = opts.color.replace('#', '');
-      colorSwatch.style.background = opts.color;
-      strokeWeight.value = opts.strokeWeight;
-      document.getElementById('curved').checked = opts.curved;
-      document.getElementById('dashed').checked = opts.dashed;
-      bendPosition.value = Math.round(opts.bendPosition * 100);
-      bendPositionInput.value = Math.round(opts.bendPosition * 100);
+      // sync to create mode
+      colorPicker.value = o.color; colorHex.textContent = o.color.replace('#',''); colorSwatch.style.background = o.color;
+      strokeWeight.value = o.strokeWeight;
+      document.getElementById('curved').checked = o.curved;
+      document.getElementById('dashed').checked = o.dashed;
+      bendPosition.value = Math.round(o.bendPosition * 100);
+      bendInput.value = Math.round(o.bendPosition * 100);
+      updateSliderBg(bendPosition);
       arrowDirCreate.setValue(arrowDirEdit.getValue());
-      updateBendVisibility(document.getElementById('curved'), bendRow);
+      updateBendVis(document.getElementById('curved'), bendRow);
       savePrefs();
-      return opts;
+      return o;
     }
 
     // ---- Swap ----
@@ -1218,30 +1129,27 @@
         if (endPicker) endPicker.setValue(sv);
       }
     });
-
     document.getElementById('editSwapBtn').addEventListener('click', () => {
       if (!currentArrowId) return;
       const sv = editStartPicker ? editStartPicker.getValue() : 'auto';
       const ev = editEndPicker ? editEndPicker.getValue() : 'auto';
       if (editStartPicker) editStartPicker.setValue(ev);
       if (editEndPicker) editEndPicker.setValue(sv);
-      const opts = getEditOptions();
-      parent.postMessage({ pluginMessage: { type: 'swap-arrow', arrowId: currentArrowId, ...opts } }, '*');
+      const o = getEditOpts();
+      parent.postMessage({ pluginMessage: { type: 'swap-arrow', arrowId: currentArrowId, ...o } }, '*');
     });
 
     // ---- Actions ----
     connectBtn.addEventListener('click', () => {
       if (frames.length < 2) return;
-      const opts = getCreateOptions();
-      parent.postMessage({ pluginMessage: { type: 'connect', sourceId: frames[0].id, targetId: frames[1].id, ...opts } }, '*');
+      const o = getCreateOpts();
+      parent.postMessage({ pluginMessage: { type: 'connect', sourceId: frames[0].id, targetId: frames[1].id, ...o } }, '*');
     });
-
     document.getElementById('updateBtn').addEventListener('click', () => {
       if (!currentArrowId) return;
-      const opts = getEditOptions();
-      parent.postMessage({ pluginMessage: { type: 'update-arrow', arrowId: currentArrowId, ...opts } }, '*');
+      const o = getEditOpts();
+      parent.postMessage({ pluginMessage: { type: 'update-arrow', arrowId: currentArrowId, ...o } }, '*');
     });
-
     document.getElementById('refreshBtn').addEventListener('click', () => {
       if (!currentArrowId) return;
       parent.postMessage({ pluginMessage: { type: 'refresh-position', arrowId: currentArrowId } }, '*');
