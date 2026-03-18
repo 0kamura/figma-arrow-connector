@@ -1,7 +1,7 @@
 "use strict";
 // Arrow Connector Plugin - FigJam風の矢印でFrameを繋ぐ
 const isRelaunch = figma.command === "refresh-all";
-figma.showUI(__html__, { width: 410, height: 680, themeColors: true });
+figma.showUI(__html__, { width: 364, height: 586, themeColors: true });
 const PLUGIN_DATA_KEY = "arrow-connector-data";
 // ノードの絶対座標バウンディングボックスを取得
 function getAbsBounds(node) {
@@ -187,8 +187,17 @@ function bezierPointAndTangent(p0, p1, p2, p3, t) {
     return { point, angle: Math.atan2(ty, tx) };
 }
 // strokeCapの種類を決定
-function arrowCap(hasArrow) {
-    return hasArrow ? "ARROW_EQUILATERAL" : "NONE";
+function arrowCap(value) {
+    if (typeof value === 'boolean')
+        return value ? "ARROW_EQUILATERAL" : "NONE";
+    switch (value) {
+        case 'arrow': return "ARROW_EQUILATERAL";
+        case 'triangle': return "TRIANGLE_FILLED";
+        case 'circle': return "CIRCLE_FILLED";
+        case 'diamond': return "DIAMOND_FILLED";
+        case 'line': return "ARROW_LINES";
+        default: return "NONE";
+    }
 }
 // HEX → RGB変換
 function hexToRgb(hex) {
@@ -364,10 +373,8 @@ async function drawArrow(nodeA, nodeB, options, existingGroup) {
             vec.dashPattern = [8, 6];
         }
     }
-    const doStartArrow = options.startArrow !== false;
-    const doEndArrow = options.endArrow !== false;
-    const startCap = arrowCap(doStartArrow);
-    const endCap = arrowCap(doEndArrow);
+    const startCap = arrowCap(options.startArrow);
+    const endCap = arrowCap(options.endArrow);
     // 折れ線（ポリライン）をvectorNetworkで作成
     function createPolyVector(points, sCapOverride, eCapOverride) {
         const xs = points.map(p => p.x);
@@ -426,7 +433,8 @@ async function drawArrow(nodeA, nodeB, options, existingGroup) {
         styleVector(vec);
         return vec;
     }
-    if (options.curved) {
+    const effectiveLineType = options.lineType || (options.curved ? 'curve' : 'elbow');
+    if (effectiveLineType === 'curve') {
         const { cp1, cp2 } = calcControlPoints(start, end);
         const p0 = start.point, p1 = cp1, p2 = cp2, p3 = end.point;
         if (options.label) {
@@ -443,6 +451,26 @@ async function drawArrow(nodeA, nodeB, options, existingGroup) {
         }
         else {
             children.push(createBezierVector(p0, p1, p2, p3));
+        }
+    }
+    else if (effectiveLineType === 'straight') {
+        // --- 直線 ---
+        const allPoints = [start.point, end.point];
+        if (options.label) {
+            const midPt = getPathMidpoint(allPoints);
+            const labelNode = await createLabel(midPt, options.label, color, options.strokeWeight);
+            const halfGap = Math.max(labelNode.width, labelNode.height) / 2 + 6;
+            const { before, after } = splitPolylineAtGap(allPoints, midPt, halfGap);
+            if (before.length >= 2) {
+                children.push(createPolyVector(before, startCap, "NONE"));
+            }
+            children.push(labelNode);
+            if (after.length >= 2) {
+                children.push(createPolyVector(after, "NONE", endCap));
+            }
+        }
+        else {
+            children.push(createPolyVector(allPoints));
         }
     }
     else {
@@ -777,7 +805,7 @@ async function refreshAllArrows() {
 })();
 // UIからのメッセージ処理
 figma.ui.onmessage = async (msg) => {
-    var _a, _b, _c;
+    var _a, _b, _c, _d, _e, _f, _g, _h, _j;
     try {
         if (msg.type === "connect") {
             const { sourceId, targetId, color, strokeWeight, curved, arrowSize, dashed, startSide, endSide, label } = msg;
@@ -787,7 +815,7 @@ figma.ui.onmessage = async (msg) => {
                 figma.notify("選択したフレームが見つかりません", { error: true });
                 return;
             }
-            const options = { color, strokeWeight, curved, dashed, startSide: startSide || "auto", endSide: endSide || "auto", label: label || "", startArrow: msg.startArrow !== undefined ? msg.startArrow : false, endArrow: msg.endArrow !== undefined ? msg.endArrow : true, bendPosition: (_a = msg.bendPosition) !== null && _a !== void 0 ? _a : 0.5 };
+            const options = { color, strokeWeight, lineType: msg.lineType || (curved ? 'curve' : 'elbow'), curved, dashed, startSide: startSide || "auto", endSide: endSide || "auto", label: label || "", startArrow: (_a = msg.startArrow) !== null && _a !== void 0 ? _a : 'none', endArrow: (_b = msg.endArrow) !== null && _b !== void 0 ? _b : 'arrow', bendPosition: (_c = msg.bendPosition) !== null && _c !== void 0 ? _c : 0.5 };
             const arrow = await drawArrow(source, target, options);
             figma.currentPage.selection = [arrow];
             figma.viewport.scrollAndZoomIntoView([arrow]);
@@ -812,7 +840,7 @@ figma.ui.onmessage = async (msg) => {
                 figma.notify("接続先のフレームが削除されています", { error: true });
                 return;
             }
-            const options = { color, strokeWeight, curved, dashed, startSide: startSide || "auto", endSide: endSide || "auto", label: label || "", startArrow: msg.startArrow !== undefined ? msg.startArrow : false, endArrow: msg.endArrow !== undefined ? msg.endArrow : true, bendPosition: (_b = msg.bendPosition) !== null && _b !== void 0 ? _b : 0.5 };
+            const options = { color, strokeWeight, lineType: msg.lineType || (curved ? 'curve' : 'elbow'), curved, dashed, startSide: startSide || "auto", endSide: endSide || "auto", label: label || "", startArrow: (_d = msg.startArrow) !== null && _d !== void 0 ? _d : 'none', endArrow: (_e = msg.endArrow) !== null && _e !== void 0 ? _e : 'arrow', bendPosition: (_f = msg.bendPosition) !== null && _f !== void 0 ? _f : 0.5 };
             const newArrow = await drawArrow(source, target, options, arrowGroup);
             figma.currentPage.selection = [newArrow];
             arrowIndex = buildArrowIndex();
@@ -863,7 +891,7 @@ figma.ui.onmessage = async (msg) => {
                 figma.notify("接続先のフレームが削除されています", { error: true });
                 return;
             }
-            const options = { color, strokeWeight, curved, dashed, startSide: startSide || "auto", endSide: endSide || "auto", label: label || "", startArrow: msg.startArrow !== undefined ? msg.startArrow : false, endArrow: msg.endArrow !== undefined ? msg.endArrow : true, bendPosition: (_c = msg.bendPosition) !== null && _c !== void 0 ? _c : 0.5 };
+            const options = { color, strokeWeight, lineType: msg.lineType || (curved ? 'curve' : 'elbow'), curved, dashed, startSide: startSide || "auto", endSide: endSide || "auto", label: label || "", startArrow: (_g = msg.startArrow) !== null && _g !== void 0 ? _g : 'none', endArrow: (_h = msg.endArrow) !== null && _h !== void 0 ? _h : 'arrow', bendPosition: (_j = msg.bendPosition) !== null && _j !== void 0 ? _j : 0.5 };
             const newArrow = await drawArrow(source, target, options, arrowGroup);
             figma.currentPage.selection = [newArrow];
             arrowIndex = buildArrowIndex();

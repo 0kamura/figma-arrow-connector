@@ -2,7 +2,7 @@
 
 const isRelaunch = figma.command === "refresh-all";
 
-figma.showUI(__html__, { width: 410, height: 680, themeColors: true });
+figma.showUI(__html__, { width: 364, height: 586, themeColors: true });
 
 const PLUGIN_DATA_KEY = "arrow-connector-data";
 
@@ -21,13 +21,14 @@ type Side = "auto" | "top" | "bottom" | "left" | "right" | "top-left" | "top-rig
 interface ArrowOptions {
   color: string; // hex
   strokeWeight: number;
-  curved: boolean;
+  lineType: string; // "straight" | "elbow" | "curve"
+  curved: boolean; // 後方互換用
   dashed: boolean;
   startSide: Side;
   endSide: Side;
   label: string;
-  startArrow: boolean;
-  endArrow: boolean;
+  startArrow: string; // "none" | "arrow" | "triangle" | "circle" | "diamond" | "line"
+  endArrow: string;
   bendPosition: number;
 }
 
@@ -248,8 +249,16 @@ function bezierPointAndTangent(
 }
 
 // strokeCapの種類を決定
-function arrowCap(hasArrow: boolean): StrokeCap {
-  return hasArrow ? "ARROW_EQUILATERAL" : "NONE";
+function arrowCap(value: string | boolean): StrokeCap {
+  if (typeof value === 'boolean') return value ? "ARROW_EQUILATERAL" : "NONE";
+  switch (value) {
+    case 'arrow': return "ARROW_EQUILATERAL";
+    case 'triangle': return "TRIANGLE_FILLED";
+    case 'circle': return "CIRCLE_FILLED";
+    case 'diamond': return "DIAMOND_FILLED";
+    case 'line': return "ARROW_LINES";
+    default: return "NONE";
+  }
 }
 
 // HEX → RGB変換
@@ -447,10 +456,8 @@ async function drawArrow(
     }
   }
 
-  const doStartArrow = options.startArrow !== false;
-  const doEndArrow = options.endArrow !== false;
-  const startCap = arrowCap(doStartArrow);
-  const endCap = arrowCap(doEndArrow);
+  const startCap = arrowCap(options.startArrow);
+  const endCap = arrowCap(options.endArrow);
 
   // 折れ線（ポリライン）をvectorNetworkで作成
   function createPolyVector(points: Point[], sCapOverride?: StrokeCap, eCapOverride?: StrokeCap): VectorNode {
@@ -517,7 +524,9 @@ async function drawArrow(
     return vec;
   }
 
-  if (options.curved) {
+  const effectiveLineType = options.lineType || (options.curved ? 'curve' : 'elbow');
+
+  if (effectiveLineType === 'curve') {
     const { cp1, cp2 } = calcControlPoints(start, end);
     const p0 = start.point, p1 = cp1, p2 = cp2, p3 = end.point;
 
@@ -537,6 +546,28 @@ async function drawArrow(
       children.push(createBezierVector(seg2[0], seg2[1], seg2[2], seg2[3], "NONE" as StrokeCap, endCap));
     } else {
       children.push(createBezierVector(p0, p1, p2, p3));
+    }
+
+  } else if (effectiveLineType === 'straight') {
+    // --- 直線 ---
+    const allPoints = [start.point, end.point];
+
+    if (options.label) {
+      const midPt = getPathMidpoint(allPoints);
+      const labelNode = await createLabel(midPt, options.label, color, options.strokeWeight);
+      const halfGap = Math.max(labelNode.width, labelNode.height) / 2 + 6;
+
+      const { before, after } = splitPolylineAtGap(allPoints, midPt, halfGap);
+
+      if (before.length >= 2) {
+        children.push(createPolyVector(before, startCap, "NONE" as StrokeCap));
+      }
+      children.push(labelNode);
+      if (after.length >= 2) {
+        children.push(createPolyVector(after, "NONE" as StrokeCap, endCap));
+      }
+    } else {
+      children.push(createPolyVector(allPoints));
     }
 
   } else {
@@ -914,7 +945,7 @@ figma.ui.onmessage = async (msg) => {
       return;
     }
 
-    const options: ArrowOptions = { color, strokeWeight, curved, dashed, startSide: startSide || "auto", endSide: endSide || "auto", label: label || "", startArrow: msg.startArrow !== undefined ? msg.startArrow : false, endArrow: msg.endArrow !== undefined ? msg.endArrow : true, bendPosition: msg.bendPosition ?? 0.5 };
+    const options: ArrowOptions = { color, strokeWeight, lineType: msg.lineType || (curved ? 'curve' : 'elbow'), curved, dashed, startSide: startSide || "auto", endSide: endSide || "auto", label: label || "", startArrow: msg.startArrow ?? 'none', endArrow: msg.endArrow ?? 'arrow', bendPosition: msg.bendPosition ?? 0.5 };
     const arrow = await drawArrow(source, target, options);
 
     figma.currentPage.selection = [arrow];
@@ -946,7 +977,7 @@ figma.ui.onmessage = async (msg) => {
       return;
     }
 
-    const options: ArrowOptions = { color, strokeWeight, curved, dashed, startSide: startSide || "auto", endSide: endSide || "auto", label: label || "", startArrow: msg.startArrow !== undefined ? msg.startArrow : false, endArrow: msg.endArrow !== undefined ? msg.endArrow : true, bendPosition: msg.bendPosition ?? 0.5 };
+    const options: ArrowOptions = { color, strokeWeight, lineType: msg.lineType || (curved ? 'curve' : 'elbow'), curved, dashed, startSide: startSide || "auto", endSide: endSide || "auto", label: label || "", startArrow: msg.startArrow ?? 'none', endArrow: msg.endArrow ?? 'arrow', bendPosition: msg.bendPosition ?? 0.5 };
     const newArrow = await drawArrow(source, target, options, arrowGroup);
 
     figma.currentPage.selection = [newArrow];
@@ -1012,7 +1043,7 @@ figma.ui.onmessage = async (msg) => {
       return;
     }
 
-    const options: ArrowOptions = { color, strokeWeight, curved, dashed, startSide: startSide || "auto", endSide: endSide || "auto", label: label || "", startArrow: msg.startArrow !== undefined ? msg.startArrow : false, endArrow: msg.endArrow !== undefined ? msg.endArrow : true, bendPosition: msg.bendPosition ?? 0.5 };
+    const options: ArrowOptions = { color, strokeWeight, lineType: msg.lineType || (curved ? 'curve' : 'elbow'), curved, dashed, startSide: startSide || "auto", endSide: endSide || "auto", label: label || "", startArrow: msg.startArrow ?? 'none', endArrow: msg.endArrow ?? 'arrow', bendPosition: msg.bendPosition ?? 0.5 };
     const newArrow = await drawArrow(source, target, options, arrowGroup);
 
     figma.currentPage.selection = [newArrow];
