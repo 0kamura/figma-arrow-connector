@@ -24,6 +24,37 @@
       background: var(--c-bg);
       line-height: 1;
     }
+    body.minimized { padding-bottom: 14px; }
+
+    /* ---- Minimize button ---- */
+    .minimize-btn {
+      position: fixed;
+      top: 8px;
+      right: 8px;
+      width: 28px;
+      height: 28px;
+      border: none;
+      background: transparent;
+      cursor: pointer;
+      color: var(--c-text2);
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+      z-index: 1000;
+    }
+    .minimize-btn:hover {
+      background: var(--c-bg2);
+      color: var(--c-text);
+    }
+    .minimize-btn svg { width: 16px; height: 16px; }
+
+    /* Minimized: hide non-Frame sections and hint; keep Create button visible */
+    body.minimized #createMode > .section:not(:first-child),
+    body.minimized #editMode > .section:not(:first-child),
+    body.minimized #hint { display: none !important; }
+    body.minimized #createMode { gap: 16px !important; }
 
     /* ---- Section ---- */
     .section {
@@ -69,15 +100,21 @@
       flex-shrink: 0;
       color: var(--c-text2);
     }
-    .swap-btn:hover { color: var(--c-text); }
+    .swap-btn:hover:not(:disabled) { color: var(--c-text); }
+    .swap-btn:disabled {
+      cursor: not-allowed;
+      opacity: 0.35;
+      color: var(--c-text3);
+    }
     .swap-btn svg { width: 16px; height: 16px; }
     .frame-rows {
       flex: 1;
       display: flex;
       flex-direction: column;
       gap: 8px;
-      padding-right: 8px;
+      padding: 0 8px;
       min-width: 0;
+      min-height: 80px;
     }
     .frame-row {
       display: flex;
@@ -109,12 +146,16 @@
       white-space: nowrap;
     }
     .empty-state {
+      flex: 1;
       background: none;
       border-radius: 4px;
-      padding: 14px 12px;
+      padding: 0 12px;
       color: var(--c-text3);
       font-size: 11px;
       text-align: center;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
 
     /* ---- Inline Point Picker ---- */
@@ -582,6 +623,10 @@
   </style>
 </head>
 <body>
+  <button id="minimizeBtn" class="minimize-btn" title="Minimize" aria-label="Minimize">
+    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10l5-5 5 5"/></svg>
+  </button>
+
   <!-- Create Mode -->
   <div id="createMode" style="display:flex;flex-direction:column;gap:28px">
     <div class="section">
@@ -590,6 +635,30 @@
         <div class="frame-rows" id="frameList">
           <div class="empty-state">Select 2 frames</div>
         </div>
+      </div>
+      <div class="arrow-dir-row">
+        <select class="arrow-dir-select" id="arrowDirStart">
+          <option value="none" selected>━  None</option>
+          <option value="arrow">▶  Arrow</option>
+          <option value="triangle">◀  Triangle</option>
+          <option value="line">›  Line Arrow</option>
+          <option value="circle">●  Circle</option>
+          <option value="diamond">◆  Diamond</option>
+        </select>
+        <button class="swap-btn" id="swapBtn" disabled>
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M2 4 L14 4 M14 4 L11 1 M14 4 L11 7"/>
+            <path d="M14 12 L2 12 M2 12 L5 9 M2 12 L5 15"/>
+          </svg>
+        </button>
+        <select class="arrow-dir-select" id="arrowDirEnd">
+          <option value="none">━  None</option>
+          <option value="arrow" selected>▶  Arrow</option>
+          <option value="triangle">◀  Triangle</option>
+          <option value="line">›  Line Arrow</option>
+          <option value="circle">●  Circle</option>
+          <option value="diamond">◆  Diamond</option>
+        </select>
       </div>
     </div>
 
@@ -649,30 +718,6 @@
           </div>
         </div>
       </div>
-      <div class="arrow-dir-row">
-        <select class="arrow-dir-select" id="arrowDirStart">
-          <option value="none" selected>━  None</option>
-          <option value="arrow">▶  Arrow</option>
-          <option value="triangle">◀  Triangle</option>
-          <option value="line">›  Line Arrow</option>
-          <option value="circle">●  Circle</option>
-          <option value="diamond">◆  Diamond</option>
-        </select>
-        <button class="swap-btn" id="swapBtn">
-          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M2 4 L14 4 M14 4 L11 1 M14 4 L11 7"/>
-            <path d="M14 12 L2 12 M2 12 L5 9 M2 12 L5 15"/>
-          </svg>
-        </button>
-        <select class="arrow-dir-select" id="arrowDirEnd">
-          <option value="none">━  None</option>
-          <option value="arrow" selected>▶  Arrow</option>
-          <option value="triangle">◀  Triangle</option>
-          <option value="line">›  Line Arrow</option>
-          <option value="circle">●  Circle</option>
-          <option value="diamond">◆  Diamond</option>
-        </select>
-      </div>
       <div class="bend-section" id="bendRow">
         <div class="bend-top">
           <label>Break Point</label>
@@ -700,6 +745,30 @@
       <div class="section-title">Frame</div>
       <div class="frame-container">
         <div class="frame-rows" id="editFrameList"></div>
+      </div>
+      <div class="arrow-dir-row">
+        <select class="arrow-dir-select" id="editArrowDirStart">
+          <option value="none" selected>━  None</option>
+          <option value="arrow">▶  Arrow</option>
+          <option value="triangle">◀  Triangle</option>
+          <option value="line">›  Line Arrow</option>
+          <option value="circle">●  Circle</option>
+          <option value="diamond">◆  Diamond</option>
+        </select>
+        <button class="swap-btn" id="editSwapBtn">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M2 4 L14 4 M14 4 L11 1 M14 4 L11 7"/>
+            <path d="M14 12 L2 12 M2 12 L5 9 M2 12 L5 15"/>
+          </svg>
+        </button>
+        <select class="arrow-dir-select" id="editArrowDirEnd">
+          <option value="none">━  None</option>
+          <option value="arrow" selected>▶  Arrow</option>
+          <option value="triangle">◀  Triangle</option>
+          <option value="line">›  Line Arrow</option>
+          <option value="circle">●  Circle</option>
+          <option value="diamond">◆  Diamond</option>
+        </select>
       </div>
     </div>
 
@@ -758,30 +827,6 @@
             <span class="tslider"></span>
           </div>
         </div>
-      </div>
-      <div class="arrow-dir-row">
-        <select class="arrow-dir-select" id="editArrowDirStart">
-          <option value="none" selected>━  None</option>
-          <option value="arrow">▶  Arrow</option>
-          <option value="triangle">◀  Triangle</option>
-          <option value="line">›  Line Arrow</option>
-          <option value="circle">●  Circle</option>
-          <option value="diamond">◆  Diamond</option>
-        </select>
-        <button class="swap-btn" id="editSwapBtn">
-          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M2 4 L14 4 M14 4 L11 1 M14 4 L11 7"/>
-            <path d="M14 12 L2 12 M2 12 L5 9 M2 12 L5 15"/>
-          </svg>
-        </button>
-        <select class="arrow-dir-select" id="editArrowDirEnd">
-          <option value="none">━  None</option>
-          <option value="arrow" selected>▶  Arrow</option>
-          <option value="triangle">◀  Triangle</option>
-          <option value="line">›  Line Arrow</option>
-          <option value="circle">●  Circle</option>
-          <option value="diamond">◆  Diamond</option>
-        </select>
       </div>
       <div class="bend-section" id="editBendRow">
         <div class="bend-top">
@@ -859,6 +904,30 @@
         onChange(fn) { cb = fn; },
       };
     }
+
+    // ---- Minimize ----
+    const MINIMIZE_KEY = 'arrow-connector-minimized';
+    const EXPANDED_SIZE = { w: 364, h: 586 };
+    const MINIMIZED_SIZE = { w: 364, h: 270 };
+    const ICON_MINIMIZE = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10l5-5 5 5"/></svg>';
+    const ICON_EXPAND   = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6l5 5 5-5"/></svg>';
+    const minimizeBtn = document.getElementById('minimizeBtn');
+
+    function applyMinimized(min) {
+      document.body.classList.toggle('minimized', min);
+      const size = min ? MINIMIZED_SIZE : EXPANDED_SIZE;
+      parent.postMessage({ pluginMessage: { type: 'resize', width: size.w, height: size.h } }, '*');
+      minimizeBtn.innerHTML = min ? ICON_EXPAND : ICON_MINIMIZE;
+      minimizeBtn.title = min ? 'Expand' : 'Minimize';
+      minimizeBtn.setAttribute('aria-label', min ? 'Expand' : 'Minimize');
+      try { localStorage.setItem(MINIMIZE_KEY, min ? '1' : '0'); } catch {}
+    }
+    minimizeBtn.addEventListener('click', () => {
+      applyMinimized(!document.body.classList.contains('minimized'));
+    });
+    try {
+      if (localStorage.getItem(MINIMIZE_KEY) === '1') applyMinimized(true);
+    } catch {}
 
     // ---- State ----
     let frames = [];
@@ -989,6 +1058,7 @@
             document.getElementById(swatchId).style.background = it.hex;
             panel.classList.remove('open');
             if (isEdit) sendEditUpdate();
+            else if (typeof savePrefs === 'function') savePrefs();
           });
           list.appendChild(el);
         }
@@ -1018,6 +1088,7 @@
             document.getElementById(hid).textContent = it.hex.replace('#','');
             document.getElementById(sid).style.background = it.hex;
             if (idx === 1) sendEditUpdate();
+            else if (typeof savePrefs === 'function') savePrefs();
           });
           grid.appendChild(sw);
         }
@@ -1120,6 +1191,7 @@
         frameList.innerHTML = '<div class="empty-state">Select 2 frames</div>';
         connectBtn.disabled = true;
         hint.textContent = 'Select 2 frames to connect';
+        document.getElementById('swapBtn').disabled = true;
         return;
       }
       const colors = ['#6177f4','#6ab39a'];
@@ -1141,6 +1213,7 @@
 
       if (frames.length === 1) { connectBtn.disabled = true; hint.textContent = 'Select 1 more frame'; }
       else { connectBtn.disabled = false; hint.textContent = frames.length > 2 ? 'First 2 frames will be connected' : ''; }
+      document.getElementById('swapBtn').disabled = frames.length < 2;
     }
 
     // ---- Prefs ----
@@ -1241,6 +1314,23 @@
       const o = getCreateOpts();
       parent.postMessage({ pluginMessage: { type: 'connect', sourceId: frames[0].id, targetId: frames[1].id, ...o } }, '*');
     });
+
+    // ---- Persist create-mode changes immediately ----
+    colorPicker.addEventListener('input', savePrefs);
+    strokeWeight.addEventListener('input', savePrefs);
+    strokeWeight.addEventListener('blur', savePrefs);
+    document.getElementById('dashed').addEventListener('change', savePrefs);
+    document.getElementById('lineType').addEventListener('click', (e) => {
+      if (e.target.closest('.line-type-btn')) setTimeout(savePrefs, 0);
+    });
+    document.getElementById('arrowDirStart').addEventListener('change', savePrefs);
+    document.getElementById('arrowDirEnd').addEventListener('change', savePrefs);
+    bendPosition.addEventListener('input', savePrefs);
+    bendInput.addEventListener('change', savePrefs);
+
+    // Final save on window teardown (plugin close)
+    window.addEventListener('beforeunload', savePrefs);
+    window.addEventListener('pagehide', savePrefs);
     // ---- Edit mode: 即時反映 ----
     let editDebounceTimer = null;
     function sendEditUpdate() {

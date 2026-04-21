@@ -1,7 +1,7 @@
 "use strict";
 // Arrow Connector Plugin - FigJam風の矢印でFrameを繋ぐ
 const isRelaunch = figma.command === "refresh-all";
-figma.showUI(__html__, { width: 364, height: 586, themeColors: true });
+figma.showUI(__html__, { width: 364, height: 586, themeColors: true, visible: !isRelaunch });
 const PLUGIN_DATA_KEY = "arrow-connector-data";
 // ノードの絶対座標バウンディングボックスを取得
 function getAbsBounds(node) {
@@ -537,13 +537,32 @@ function getArrowData(node) {
         return null;
     }
 }
-// フレーム系ノードかどうか
+// 接続可能なノードか（フレーム系 + シェイプ/テキスト等のオブジェクト）
 function isConnectable(n) {
-    return (n.type === "FRAME" ||
-        n.type === "COMPONENT" ||
-        n.type === "INSTANCE" ||
-        n.type === "GROUP" ||
-        n.type === "SECTION");
+    // プラグインが作った矢印グループ自身は除外
+    if (getArrowData(n))
+        return false;
+    switch (n.type) {
+        case "FRAME":
+        case "COMPONENT":
+        case "COMPONENT_SET":
+        case "INSTANCE":
+        case "GROUP":
+        case "SECTION":
+        case "TEXT":
+        case "RECTANGLE":
+        case "ELLIPSE":
+        case "POLYGON":
+        case "STAR":
+        case "LINE":
+        case "VECTOR":
+        case "BOOLEAN_OPERATION":
+        case "STICKY":
+        case "SHAPE_WITH_TEXT":
+            return true;
+        default:
+            return false;
+    }
 }
 // 2フレーム間の既存矢印を検索（どちら向きでもマッチ）
 function findExistingArrow(idA, idB) {
@@ -905,6 +924,11 @@ figma.ui.onmessage = async (msg) => {
                 arrowIndex = buildArrowIndex();
                 figma.notify("矢印を削除しました");
             }
+        }
+        if (msg.type === "resize") {
+            const w = Math.max(200, Math.min(800, Number(msg.width) || 364));
+            const h = Math.max(80, Math.min(800, Number(msg.height) || 586));
+            figma.ui.resize(w, h);
         }
         if (msg.type === "cancel") {
             figma.closePlugin();
