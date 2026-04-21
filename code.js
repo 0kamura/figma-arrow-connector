@@ -1,7 +1,7 @@
 "use strict";
 // Arrow Connector Plugin - FigJam風の矢印でFrameを繋ぐ
 const isRelaunch = figma.command === "refresh-all";
-figma.showUI(__html__, { width: 364, height: 586, themeColors: true, visible: !isRelaunch });
+figma.showUI(__html__, { width: 340, height: 586, themeColors: true, visible: !isRelaunch });
 const PLUGIN_DATA_KEY = "arrow-connector-data";
 // ノードの絶対座標バウンディングボックスを取得
 function getAbsBounds(node) {
@@ -925,7 +925,7 @@ figma.ui.onmessage = async (msg) => {
             }
         }
         if (msg.type === "resize") {
-            const w = Math.max(200, Math.min(800, Number(msg.width) || 364));
+            const w = Math.max(200, Math.min(800, Number(msg.width) || 340));
             const h = Math.max(80, Math.min(800, Number(msg.height) || 586));
             figma.ui.resize(w, h);
         }
