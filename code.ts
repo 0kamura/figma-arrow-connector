@@ -965,7 +965,6 @@ figma.ui.onmessage = async (msg) => {
     const arrow = await drawArrow(source, target, options);
 
     figma.currentPage.selection = [arrow];
-    figma.viewport.scrollAndZoomIntoView([arrow]);
     arrowIndex = buildArrowIndex();
     figma.notify(`${source.name} → ${target.name} を接続しました`);
   }

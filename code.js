@@ -837,7 +837,6 @@ figma.ui.onmessage = async (msg) => {
             const options = { color, strokeWeight, lineType: msg.lineType || (curved ? 'curve' : 'elbow'), curved, dashed, startSide: startSide || "auto", endSide: endSide || "auto", label: label || "", startArrow: (_a = msg.startArrow) !== null && _a !== void 0 ? _a : 'none', endArrow: (_b = msg.endArrow) !== null && _b !== void 0 ? _b : 'arrow', bendPosition: (_c = msg.bendPosition) !== null && _c !== void 0 ? _c : 0.5 };
             const arrow = await drawArrow(source, target, options);
             figma.currentPage.selection = [arrow];
-            figma.viewport.scrollAndZoomIntoView([arrow]);
             arrowIndex = buildArrowIndex();
             figma.notify(`${source.name} → ${target.name} を接続しました`);
         }
