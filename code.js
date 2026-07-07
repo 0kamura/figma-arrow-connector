@@ -387,7 +387,7 @@ async function drawArrow(nodeA, nodeB, options, existingGroup) {
     const startCap = arrowCap(options.startArrow);
     const endCap = arrowCap(options.endArrow);
     // 折れ線（ポリライン）をvectorNetworkで作成
-    function createPolyVector(points, sCapOverride, eCapOverride) {
+    async function createPolyVector(points, sCapOverride, eCapOverride) {
         const xs = points.map(p => p.x);
         const ys = points.map(p => p.y);
         const sx = Math.min(...xs) - 20;
@@ -407,12 +407,13 @@ async function drawArrow(nodeA, nodeB, options, existingGroup) {
         for (let i = 0; i < points.length - 1; i++) {
             segments.push({ start: i, end: i + 1 });
         }
-        vec.vectorNetwork = { vertices, segments, regions: [] };
+        // dynamic-page では同期セッター (vec.vectorNetwork = ...) は使用不可
+        await vec.setVectorNetworkAsync({ vertices, segments, regions: [] });
         styleVector(vec);
         return vec;
     }
     // ベジェ曲線をvectorNetworkで作成
-    function createBezierVector(p0, cp1, cp2, p3, sCapOverride, eCapOverride) {
+    async function createBezierVector(p0, cp1, cp2, p3, sCapOverride, eCapOverride) {
         const allPts = [p0, cp1, cp2, p3];
         const xs = allPts.map(p => p.x);
         const ys = allPts.map(p => p.y);
@@ -428,7 +429,7 @@ async function drawArrow(nodeA, nodeB, options, existingGroup) {
         const v3 = { x: p3.x - sx, y: p3.y - sy };
         const c1 = { x: cp1.x - sx, y: cp1.y - sy };
         const c2 = { x: cp2.x - sx, y: cp2.y - sy };
-        vec.vectorNetwork = {
+        await vec.setVectorNetworkAsync({
             vertices: [
                 { x: v0.x, y: v0.y, strokeCap: sCapOverride !== null && sCapOverride !== void 0 ? sCapOverride : startCap },
                 { x: v3.x, y: v3.y, strokeCap: eCapOverride !== null && eCapOverride !== void 0 ? eCapOverride : endCap },
@@ -440,7 +441,7 @@ async function drawArrow(nodeA, nodeB, options, existingGroup) {
                     tangentEnd: { x: c2.x - v3.x, y: c2.y - v3.y },
                 }],
             regions: [],
-        };
+        });
         styleVector(vec);
         return vec;
     }
@@ -462,12 +463,12 @@ async function drawArrow(nodeA, nodeB, options, existingGroup) {
             const t2 = findBezierT(p0, p1, p2, p3, 0.5, halfGap, 1);
             const seg1 = splitBezier(p0, p1, p2, p3, t1).first;
             const seg2 = splitBezier(p0, p1, p2, p3, t2).second;
-            children.push(createBezierVector(seg1[0], seg1[1], seg1[2], seg1[3], startCap, "NONE"));
+            children.push(await createBezierVector(seg1[0], seg1[1], seg1[2], seg1[3], startCap, "NONE"));
             children.push(labelNode);
-            children.push(createBezierVector(seg2[0], seg2[1], seg2[2], seg2[3], "NONE", endCap));
+            children.push(await createBezierVector(seg2[0], seg2[1], seg2[2], seg2[3], "NONE", endCap));
         }
         else {
-            children.push(createBezierVector(p0, p1, p2, p3));
+            children.push(await createBezierVector(p0, p1, p2, p3));
         }
     }
     else if (effectiveLineType === 'straight') {
@@ -479,15 +480,15 @@ async function drawArrow(nodeA, nodeB, options, existingGroup) {
             const halfGap = Math.max(labelNode.width, labelNode.height) / 2 + 6;
             const { before, after } = splitPolylineAtGap(allPoints, midPt, halfGap);
             if (before.length >= 2) {
-                children.push(createPolyVector(before, startCap, "NONE"));
+                children.push(await createPolyVector(before, startCap, "NONE"));
             }
             children.push(labelNode);
             if (after.length >= 2) {
-                children.push(createPolyVector(after, "NONE", endCap));
+                children.push(await createPolyVector(after, "NONE", endCap));
             }
         }
         else {
-            children.push(createPolyVector(allPoints));
+            children.push(await createPolyVector(allPoints));
         }
     }
     else {
@@ -500,15 +501,15 @@ async function drawArrow(nodeA, nodeB, options, existingGroup) {
             const halfGap = Math.max(labelNode.width, labelNode.height) / 2 + 6;
             const { before, after } = splitPolylineAtGap(allPoints, midPt, halfGap);
             if (before.length >= 2) {
-                children.push(createPolyVector(before, startCap, "NONE"));
+                children.push(await createPolyVector(before, startCap, "NONE"));
             }
             children.push(labelNode);
             if (after.length >= 2) {
-                children.push(createPolyVector(after, "NONE", endCap));
+                children.push(await createPolyVector(after, "NONE", endCap));
             }
         }
         else {
-            children.push(createPolyVector(allPoints));
+            children.push(await createPolyVector(allPoints));
         }
     }
     // 既存グループがあれば中身を入れ替え、なければ新規作成
