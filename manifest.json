@@ -7,6 +7,8 @@
   "capabilities": [],
   "enableProposedApi": false,
   "editorType": ["figma"],
+  "documentAccess": "dynamic-page",
+  "networkAccess": { "allowedDomains": ["none"] },
   "relaunchButtons": [
     {
       "command": "refresh-all",
