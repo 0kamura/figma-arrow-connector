@@ -703,7 +703,10 @@
           <button class="line-type-btn" data-value="straight" title="Straight">
             <svg viewBox="0 0 28 14"><line x1="2" y1="7" x2="26" y2="7"/></svg>
           </button>
-          <button class="line-type-btn active" data-value="elbow" title="Elbow">
+          <button class="line-type-btn active" data-value="elbow-l" title="L-bend">
+            <svg viewBox="0 0 28 14"><polyline points="2,12 18,12 18,2"/></svg>
+          </button>
+          <button class="line-type-btn" data-value="elbow-z" title="2-bend">
             <svg viewBox="0 0 28 14"><polyline points="2,12 14,12 14,2 26,2"/></svg>
           </button>
           <button class="line-type-btn" data-value="curve" title="Curve">
@@ -813,7 +816,10 @@
           <button class="line-type-btn" data-value="straight" title="Straight">
             <svg viewBox="0 0 28 14"><line x1="2" y1="7" x2="26" y2="7"/></svg>
           </button>
-          <button class="line-type-btn active" data-value="elbow" title="Elbow">
+          <button class="line-type-btn active" data-value="elbow-l" title="L-bend">
+            <svg viewBox="0 0 28 14"><polyline points="2,12 18,12 18,2"/></svg>
+          </button>
+          <button class="line-type-btn" data-value="elbow-z" title="2-bend">
             <svg viewBox="0 0 28 14"><polyline points="2,12 14,12 14,2 26,2"/></svg>
           </button>
           <button class="line-type-btn" data-value="curve" title="Curve">
@@ -850,14 +856,10 @@
   <script>
     // ---- Inline Point Picker 36x36 ----
     const PP_POS = {
-      'top-left':    { left: 3.5, top: 3.5 },
-      'top':         { left: 18, top: 3.5 },
-      'top-right':   { left: 32.5, top: 3.5 },
-      'left':        { left: 3.5, top: 18 },
-      'right':       { left: 32.5, top: 18 },
-      'bottom-left': { left: 3.5, top: 32.5 },
-      'bottom':      { left: 18, top: 32.5 },
-      'bottom-right':{ left: 32.5, top: 32.5 },
+      'top':    { left: 18, top: 3.5 },
+      'left':   { left: 3.5, top: 18 },
+      'right':  { left: 32.5, top: 18 },
+      'bottom': { left: 18, top: 32.5 },
     };
 
     function createInlinePicker(container, accentColor) {
@@ -985,15 +987,18 @@
     function initLineType(id, bendRowEl) {
       const container = document.getElementById(id);
       const btns = container.querySelectorAll('.line-type-btn');
-      function getValue() { const a = container.querySelector('.line-type-btn.active'); return a ? a.dataset.value : 'elbow'; }
+      function getValue() { const a = container.querySelector('.line-type-btn.active'); return a ? a.dataset.value : 'elbow-l'; }
       function setValue(v) {
-        // 旧boolean互換: true→curve, false→elbow
+        // 旧boolean互換: true→curve, false→elbow-l
         if (v === true) v = 'curve';
-        else if (v === false) v = 'elbow';
+        else if (v === false) v = 'elbow-l';
+        // 旧 'elbow' → 'elbow-l' に正規化
+        else if (v === 'elbow') v = 'elbow-l';
         btns.forEach(b => b.classList.toggle('active', b.dataset.value === v));
         updateBendVis();
       }
-      function updateBendVis() { bendRowEl.style.display = getValue() === 'elbow' ? '' : 'none'; }
+      // bendスライダーは「2折り（elbow-z）」のときだけ表示
+      function updateBendVis() { bendRowEl.style.display = getValue() === 'elbow-z' ? '' : 'none'; }
       btns.forEach(b => b.addEventListener('click', () => { setValue(b.dataset.value); }));
       updateBendVis();
       return { getValue, setValue, updateBendVis };
@@ -1170,7 +1175,7 @@
         editColorHex.textContent = o.color.replace('#','');
         editColorSwatch.style.background = o.color;
         editStrokeWeight.value = o.strokeWeight;
-        lineTypeEdit.setValue(o.lineType ?? (o.curved ? 'curve' : 'elbow'));
+        lineTypeEdit.setValue(o.lineType ?? (o.curved ? 'curve' : 'elbow-l'));
         document.getElementById('editDashed').checked = o.dashed;
         editStartPicker.setValue(o.startSide || 'auto');
         editEndPicker.setValue(o.endSide || 'auto');
@@ -1238,7 +1243,7 @@
         if (p.color) { colorPicker.value = p.color; colorHex.textContent = p.color.replace('#',''); colorSwatch.style.background = p.color; }
         if (p.strokeWeight) strokeWeight.value = p.strokeWeight;
         if (p.lineType) lineTypeCreate.setValue(p.lineType);
-        else if (typeof p.curved === 'boolean') lineTypeCreate.setValue(p.curved ? 'curve' : 'elbow');
+        else if (typeof p.curved === 'boolean') lineTypeCreate.setValue(p.curved ? 'curve' : 'elbow-l');
         if (typeof p.dashed === 'boolean') document.getElementById('dashed').checked = p.dashed;
         if (p.arrowDirStart || p.arrowDirEnd) arrowDirCreate.setValue({ start: p.arrowDirStart || 'none', end: p.arrowDirEnd || 'arrow' });
         else if (p.arrowDirValue) arrowDirCreate.setValue(p.arrowDirValue);
@@ -1277,7 +1282,7 @@
       // sync to create mode
       colorPicker.value = o.color; colorHex.textContent = o.color.replace('#',''); colorSwatch.style.background = o.color;
       strokeWeight.value = o.strokeWeight;
-      lineTypeCreate.setValue(o.lineType || (o.curved ? 'curve' : 'elbow'));
+      lineTypeCreate.setValue(o.lineType || (o.curved ? 'curve' : 'elbow-l'));
       document.getElementById('dashed').checked = o.dashed;
       bendPosition.value = Math.round(o.bendPosition * 100);
       bendInput.value = Math.round(o.bendPosition * 100);
