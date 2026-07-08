@@ -21,4 +21,15 @@ Already drew an arrow? Click it to re-edit anytime. Need to update every arrow a
 作った矢印はクリックでいつでも再編集。全矢印の一括更新もワンクリック。設定は自動保存されるので、次回もすぐ使い始められます。
 
 ## Tags
-arrow, connector, flowchart, diagram, wireframe, line, link
+arrow, connector, flowchart, diagram, wireframe
+
+## Publish form notes
+- tagline は100文字以内
+- tag は最大5個まで
+
+## Data security form answers
+1. Backend service → **No, I do not host a backend service**（バックエンドなし）
+2. Network requests → **My plugin/widget does not make any network requests**（ui.htmlに外部リソースなし・manifestで networkAccess: none 宣言済み。loadFontAsyncはFigma内部APIなので該当しない）
+3. User authentication → **No**（ログイン機能なし）
+4. Store data from plugin API → **Yes, stores locally (localStorage / setPluginData)** のみ（矢印メタデータを setPluginData、設定をlocalStorageに保存。外部送信はないので3番目は選ばない）
+5. Updates → **I am a solo developer**
