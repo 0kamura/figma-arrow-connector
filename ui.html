@@ -581,6 +581,36 @@
     .label-input:focus { border-color: var(--c-text2); }
     .label-input::placeholder { color: var(--c-text3); }
 
+    .label-style-row {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .text-toggle-group {
+      display: flex;
+      gap: 0;
+      background: var(--c-bg2);
+      border-radius: 3px;
+      padding: 2px;
+    }
+    .text-toggle-btn {
+      border: none;
+      border-radius: 2px;
+      background: transparent;
+      cursor: pointer;
+      padding: 3px 10px;
+      font-size: 11px;
+      font-family: inherit;
+      color: var(--c-text3);
+      transition: all 0.12s;
+    }
+    .text-toggle-btn:hover { background: rgba(255,255,255,0.5); }
+    .text-toggle-btn.active {
+      background: var(--c-white);
+      color: var(--c-text);
+      box-shadow: 0 1px 2px rgba(12,12,13,0.08);
+    }
+
     /* ---- Buttons ---- */
     .btn {
       width: 100%;
@@ -614,6 +644,11 @@
       gap: 10px;
     }
     .btn-row .btn { flex: 1; }
+    .btn-stack {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
     .hint {
       font-size: 11px;
       color: var(--c-text3);
@@ -628,7 +663,7 @@
   </button>
 
   <!-- Create Mode -->
-  <div id="createMode" style="display:flex;flex-direction:column;gap:28px">
+  <div id="createMode" style="display:flex;flex-direction:column;gap:20px">
     <div class="section">
       <div class="section-title">Frame</div>
       <div class="frame-container">
@@ -735,15 +770,31 @@
 
     <div class="section">
       <div class="section-title">Label</div>
+      <div class="label-style-row">
+        <div class="weight-row">
+          <label>Size</label>
+          <div class="weight-box">
+            <span class="w-prefix">Aa</span>
+            <input type="text" id="labelFontSize" inputmode="decimal" value="14" />
+          </div>
+        </div>
+        <div class="text-toggle-group" id="labelWeight">
+          <button class="text-toggle-btn active" data-value="regular">Regular</button>
+          <button class="text-toggle-btn" data-value="bold">Bold</button>
+        </div>
+      </div>
       <input type="text" class="label-input" id="labelInput" placeholder="Input Text" />
     </div>
 
-    <button class="btn btn-primary" id="connectBtn" disabled>Create Arrow</button>
+    <div class="btn-stack">
+      <button class="btn btn-primary" id="connectBtn" disabled>Create Arrow</button>
+      <button class="btn btn-outline" id="relaunchBtn">Relaunch</button>
+    </div>
     <div class="hint" id="hint">Select 2 frames to connect</div>
   </div>
 
   <!-- Edit Mode -->
-  <div id="editMode" style="display:none;flex-direction:column;gap:28px;">
+  <div id="editMode" style="display:none;flex-direction:column;gap:20px;">
     <div class="section">
       <div class="section-title">Frame</div>
       <div class="frame-container">
@@ -848,6 +899,19 @@
 
     <div class="section">
       <div class="section-title">Label</div>
+      <div class="label-style-row">
+        <div class="weight-row">
+          <label>Size</label>
+          <div class="weight-box">
+            <span class="w-prefix">Aa</span>
+            <input type="text" id="editLabelFontSize" inputmode="decimal" value="14" />
+          </div>
+        </div>
+        <div class="text-toggle-group" id="editLabelWeight">
+          <button class="text-toggle-btn active" data-value="regular">Regular</button>
+          <button class="text-toggle-btn" data-value="bold">Bold</button>
+        </div>
+      </div>
       <input type="text" class="label-input" id="editLabelInput" placeholder="Input Text" />
     </div>
 
@@ -1005,6 +1069,18 @@
     }
     const lineTypeCreate = initLineType('lineType', bendRow);
     const lineTypeEdit = initLineType('editLineType', editBendRow);
+
+    // Label太さ（Regular/Bold）の2択トグル
+    function initTextToggle(id) {
+      const container = document.getElementById(id);
+      const btns = container.querySelectorAll('.text-toggle-btn');
+      function getValue() { const a = container.querySelector('.text-toggle-btn.active'); return a ? a.dataset.value : 'regular'; }
+      function setValue(v) { btns.forEach(b => b.classList.toggle('active', b.dataset.value === v)); }
+      btns.forEach(b => b.addEventListener('click', () => setValue(b.dataset.value)));
+      return { getValue, setValue };
+    }
+    const labelWeightCreate = initTextToggle('labelWeight');
+    const labelWeightEdit = initTextToggle('editLabelWeight');
 
     // ---- Color ----
     const colorPicker = document.getElementById('colorPicker');
@@ -1180,6 +1256,8 @@
         editStartPicker.setValue(o.startSide || 'auto');
         editEndPicker.setValue(o.endSide || 'auto');
         document.getElementById('editLabelInput').value = o.label || '';
+        document.getElementById('editLabelFontSize').value = o.labelFontSize || 14;
+        labelWeightEdit.setValue(o.labelBold ? 'bold' : 'regular');
 
         arrowDirEdit.setValue({ start: typeof o.startArrow === 'string' ? o.startArrow : (o.startArrow ? 'arrow' : 'none'), end: typeof o.endArrow === 'string' ? o.endArrow : (o.endArrow !== false ? 'arrow' : 'none') });
 
@@ -1232,6 +1310,8 @@
         arrowDirStart: arrowDirCreate.getValue().start,
         arrowDirEnd: arrowDirCreate.getValue().end,
         bendPosition: parseInt(bendPosition.value),
+        labelFontSize: parseFloat(document.getElementById('labelFontSize').value),
+        labelBold: labelWeightCreate.getValue() === 'bold',
       };
       try { localStorage.setItem(STORAGE_KEY, JSON.stringify(p)); } catch {}
     }
@@ -1248,6 +1328,8 @@
         if (p.arrowDirStart || p.arrowDirEnd) arrowDirCreate.setValue({ start: p.arrowDirStart || 'none', end: p.arrowDirEnd || 'arrow' });
         else if (p.arrowDirValue) arrowDirCreate.setValue(p.arrowDirValue);
         if (p.bendPosition) { bendPosition.value = p.bendPosition; bendInput.value = p.bendPosition; updateSliderBg(bendPosition); }
+        if (p.labelFontSize) document.getElementById('labelFontSize').value = p.labelFontSize;
+        if (typeof p.labelBold === 'boolean') labelWeightCreate.setValue(p.labelBold ? 'bold' : 'regular');
       } catch {}
     }
     loadPrefs();
@@ -1261,6 +1343,8 @@
         startSide: startPicker ? startPicker.getValue() : 'auto',
         endSide: endPicker ? endPicker.getValue() : 'auto',
         label: document.getElementById('labelInput').value,
+        labelFontSize: parseFloat(document.getElementById('labelFontSize').value) || 14,
+        labelBold: labelWeightCreate.getValue() === 'bold',
         startArrow: a.startArrow, endArrow: a.endArrow,
         bendPosition: parseInt(bendPosition.value) / 100,
       };
@@ -1276,6 +1360,8 @@
         startSide: editStartPicker ? editStartPicker.getValue() : 'auto',
         endSide: editEndPicker ? editEndPicker.getValue() : 'auto',
         label: document.getElementById('editLabelInput').value,
+        labelFontSize: parseFloat(document.getElementById('editLabelFontSize').value) || 14,
+        labelBold: labelWeightEdit.getValue() === 'bold',
         startArrow: a.startArrow, endArrow: a.endArrow,
         bendPosition: parseInt(editBendPosition.value) / 100,
       };
@@ -1288,6 +1374,8 @@
       bendInput.value = Math.round(o.bendPosition * 100);
       updateSliderBg(bendPosition);
       arrowDirCreate.setValue(arrowDirEdit.getValue());
+      document.getElementById('labelFontSize').value = o.labelFontSize;
+      labelWeightCreate.setValue(o.labelBold ? 'bold' : 'regular');
       savePrefs();
       return o;
     }
@@ -1319,6 +1407,9 @@
       const o = getCreateOpts();
       parent.postMessage({ pluginMessage: { type: 'connect', sourceId: frames[0].id, targetId: frames[1].id, ...o } }, '*');
     });
+    document.getElementById('relaunchBtn').addEventListener('click', () => {
+      parent.postMessage({ pluginMessage: { type: 'refresh-all' } }, '*');
+    });
 
     // ---- Persist create-mode changes immediately ----
     colorPicker.addEventListener('input', savePrefs);
@@ -1332,6 +1423,11 @@
     document.getElementById('arrowDirEnd').addEventListener('change', savePrefs);
     bendPosition.addEventListener('input', savePrefs);
     bendInput.addEventListener('change', savePrefs);
+    document.getElementById('labelFontSize').addEventListener('input', savePrefs);
+    document.getElementById('labelFontSize').addEventListener('blur', savePrefs);
+    document.getElementById('labelWeight').addEventListener('click', (e) => {
+      if (e.target.closest('.text-toggle-btn')) setTimeout(savePrefs, 0);
+    });
 
     // Final save on window teardown (plugin close)
     window.addEventListener('beforeunload', savePrefs);
@@ -1344,6 +1440,16 @@
       editDebounceTimer = setTimeout(() => {
         const o = getEditOpts();
         parent.postMessage({ pluginMessage: { type: 'update-arrow', arrowId: currentArrowId, ...o } }, '*');
+      }, 80);
+    }
+    // Label入力は矢印全体を作り直さず、テキストだけ差し替える軽量経路を使う
+    let labelDebounceTimer = null;
+    function sendLabelUpdate() {
+      if (!currentArrowId) return;
+      clearTimeout(labelDebounceTimer);
+      labelDebounceTimer = setTimeout(() => {
+        const label = document.getElementById('editLabelInput').value;
+        parent.postMessage({ pluginMessage: { type: 'update-arrow-label', arrowId: currentArrowId, label } }, '*');
       }, 80);
     }
     // strokeWeight バリデーション（0.5〜20、小数第1位まで）+ 上下キー対応
@@ -1378,7 +1484,12 @@
     });
     editBendPosition.addEventListener('input', sendEditUpdate);
     editBendInput.addEventListener('change', sendEditUpdate);
-    document.getElementById('editLabelInput').addEventListener('input', sendEditUpdate);
+    document.getElementById('editLabelInput').addEventListener('input', sendLabelUpdate);
+    document.getElementById('editLabelFontSize').addEventListener('input', sendEditUpdate);
+    document.getElementById('editLabelFontSize').addEventListener('blur', sendEditUpdate);
+    document.getElementById('editLabelWeight').addEventListener('click', (e) => {
+      if (e.target.closest('.text-toggle-btn')) setTimeout(sendEditUpdate, 0);
+    });
     // arrow dir selects
     document.getElementById('editArrowDirStart').addEventListener('change', sendEditUpdate);
     document.getElementById('editArrowDirEnd').addEventListener('change', sendEditUpdate);

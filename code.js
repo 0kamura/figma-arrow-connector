@@ -1,6 +1,10 @@
 "use strict";
 // Arrow Connector Plugin - FigJam風の矢印でFrameを繋ぐ
 const isRelaunch = figma.command === "refresh-all";
+// 非表示のインスタンス内部要素は探索しない。findAllWithCriteria等の全ページ探索が
+// 大きいファイルで大幅に速くなる（Figma公式推奨）。本プラグインは非表示インスタンス内部を
+// 扱わないため機能面の影響はない
+figma.skipInvisibleInstanceChildren = true;
 figma.showUI(__html__, { width: 340, height: 586, themeColors: true, visible: !isRelaunch });
 const PLUGIN_DATA_KEY = "arrow-connector-data";
 // ノードの絶対座標バウンディングボックスを取得
@@ -355,11 +359,12 @@ function splitPolylineAtGap(points, gapCenter, halfGap) {
     return { before, after };
 }
 // ラベルテキストを作成
-async function createLabel(pos, text, color, strokeWeight) {
+async function createLabel(pos, text, color, fontSize, bold) {
     const label = figma.createText();
-    await figma.loadFontAsync({ family: "Inter", style: "Medium" });
-    label.fontName = { family: "Inter", style: "Medium" };
-    label.fontSize = Math.max(12, strokeWeight * 4);
+    const style = bold ? "Bold" : "Regular";
+    await figma.loadFontAsync({ family: "Inter", style });
+    label.fontName = { family: "Inter", style };
+    label.fontSize = fontSize;
     label.characters = text;
     label.fills = [{ type: "SOLID", color }];
     label.textAlignHorizontal = "CENTER";
@@ -457,7 +462,7 @@ async function drawArrow(nodeA, nodeB, options, existingGroup) {
         const p0 = start.point, p1 = cp1, p2 = cp2, p3 = end.point;
         if (options.label) {
             const mid = bezierPointAndTangent(p0, p1, p2, p3, 0.5);
-            const labelNode = await createLabel(mid.point, options.label, color, options.strokeWeight);
+            const labelNode = await createLabel(mid.point, options.label, color, options.labelFontSize, options.labelBold);
             const halfGap = Math.max(labelNode.width, labelNode.height) / 2 + 6;
             const t1 = findBezierT(p0, p1, p2, p3, 0.5, halfGap, -1);
             const t2 = findBezierT(p0, p1, p2, p3, 0.5, halfGap, 1);
@@ -476,7 +481,7 @@ async function drawArrow(nodeA, nodeB, options, existingGroup) {
         const allPoints = [start.point, end.point];
         if (options.label) {
             const midPt = getPathMidpoint(allPoints);
-            const labelNode = await createLabel(midPt, options.label, color, options.strokeWeight);
+            const labelNode = await createLabel(midPt, options.label, color, options.labelFontSize, options.labelBold);
             const halfGap = Math.max(labelNode.width, labelNode.height) / 2 + 6;
             const { before, after } = splitPolylineAtGap(allPoints, midPt, halfGap);
             if (before.length >= 2) {
@@ -497,7 +502,7 @@ async function drawArrow(nodeA, nodeB, options, existingGroup) {
         const allPoints = [start.point, ...waypoints, end.point];
         if (options.label) {
             const midPt = getPathMidpoint(allPoints);
-            const labelNode = await createLabel(midPt, options.label, color, options.strokeWeight);
+            const labelNode = await createLabel(midPt, options.label, color, options.labelFontSize, options.labelBold);
             const halfGap = Math.max(labelNode.width, labelNode.height) / 2 + 6;
             const { before, after } = splitPolylineAtGap(allPoints, midPt, halfGap);
             if (before.length >= 2) {
@@ -588,23 +593,6 @@ function isConnectable(n) {
         default:
             return false;
     }
-}
-// 2フレーム間の既存矢印を検索（どちら向きでもマッチ、セクション/フレーム内にネストしていても対象）
-function findExistingArrow(idA, idB) {
-    const arrowGroups = figma.currentPage.findAllWithCriteria({
-        types: ["GROUP"],
-        pluginData: { keys: [PLUGIN_DATA_KEY] },
-    });
-    for (const node of arrowGroups) {
-        const data = getArrowData(node);
-        if (data) {
-            if ((data.sourceId === idA && data.targetId === idB) ||
-                (data.sourceId === idB && data.targetId === idA)) {
-                return node;
-            }
-        }
-    }
-    return null;
 }
 // 選択状態をUIに送信
 async function sendSelectionState() {
@@ -753,16 +741,54 @@ function buildArrowIndex() {
     }
     return index;
 }
-let arrowIndex = buildArrowIndex();
+// 起動時は空で持ち、直後の refreshAllArrows がスナップショットから直接組み立てる
+// （buildArrowIndex はページ全体スキャンなので、起動時に二重で走らせない）
+let arrowIndex = new Map();
 let updateTimer = null;
 let pendingNodeIds = new Set();
+// arrowIndex を差分更新する（ページ全体の再スキャンを避けるため）。
+// oldArrowId: 置き換え前のグループID（新規作成時は null）
+// newArrowId: 置き換え後のグループID（削除時は null）
+function patchArrowIndex(oldArrowId, newArrowId, frameIds) {
+    for (const fid of frameIds) {
+        let list = arrowIndex.get(fid);
+        if (!list) {
+            list = [];
+            arrowIndex.set(fid, list);
+        }
+        if (oldArrowId) {
+            const idx = list.indexOf(oldArrowId);
+            if (idx !== -1)
+                list.splice(idx, 1);
+        }
+        if (newArrowId && !list.includes(newArrowId)) {
+            list.push(newArrowId);
+        }
+    }
+}
+// arrowIndex を使って2フレーム間の既存矢印グループIDを探す（ページ全体スキャン不要）
+function findExistingArrowIdViaIndex(idA, idB) {
+    const listA = arrowIndex.get(idA);
+    if (!listA)
+        return null;
+    const listB = new Set(arrowIndex.get(idB) || []);
+    for (const gid of listA) {
+        if (listB.has(gid))
+            return gid;
+    }
+    return null;
+}
 // 現在ページに張っている nodechange リスナー（ページ切り替え時に張り替える）
 let nodeChangeListenerPage = null;
+// フレーム移動追従の対象とするプロパティ（位置・サイズのみ。色/文字/エフェクト等では反応しない）
+const GEOMETRY_PROPERTIES = new Set([
+    "x", "y", "width", "height", "relativeTransform", "rotation", "constraints",
+]);
 function handleNodeChange(event) {
     for (const change of event.nodeChanges) {
         if (change.type === "PROPERTY_CHANGE") {
             const nodeId = change.id;
-            if (arrowIndex.has(nodeId)) {
+            if (arrowIndex.has(nodeId) && change.properties.some(p => GEOMETRY_PROPERTIES.has(p))) {
                 pendingNodeIds.add(nodeId);
             }
         }
@@ -863,6 +889,7 @@ async function refreshAllArrows() {
         types: ["GROUP"],
         pluginData: { keys: [PLUGIN_DATA_KEY] },
     });
+    const newIndex = new Map();
     const processed = new Set();
     for (const node of snapshot) {
         try {
@@ -874,8 +901,13 @@ async function refreshAllArrows() {
                 const source = await figma.getNodeByIdAsync(arrowData.sourceId);
                 const target = await figma.getNodeByIdAsync(arrowData.targetId);
                 if (source && target) {
-                    await drawArrow(source, target, arrowData.options, node);
+                    const newArrow = await drawArrow(source, target, arrowData.options, node);
                     count++;
+                    for (const fid of [arrowData.sourceId, arrowData.targetId]) {
+                        const list = newIndex.get(fid) || [];
+                        list.push(newArrow.id);
+                        newIndex.set(fid, list);
+                    }
                 }
             }
         }
@@ -883,21 +915,23 @@ async function refreshAllArrows() {
             console.error("refreshArrow failed for node:", node.id, e);
         }
     }
-    arrowIndex = buildArrowIndex();
+    // このスキャンで見つかったスナップショットからそのまま組み立てる（buildArrowIndexの再スキャンは不要）
+    arrowIndex = newIndex;
     return count;
 }
-// プラグイン起動時に全矢印を自動更新
-(async () => {
-    let count = 0;
-    let errored = false;
-    try {
-        count = await refreshAllArrows();
-    }
-    catch (e) {
-        console.error("refreshAllArrows failed:", e);
-        errored = true;
-    }
-    if (isRelaunch) {
+// 通常起動時は全矢印の再描画はせず、arrowIndexの構築だけ行う（1回のスキャンで済ませる）。
+// 全矢印の位置を実際に描き直すのは、relaunchボタン（isRelaunch）経由の明示的な操作の時だけ。
+if (isRelaunch) {
+    (async () => {
+        let count = 0;
+        let errored = false;
+        try {
+            count = await refreshAllArrows();
+        }
+        catch (e) {
+            console.error("refreshAllArrows failed:", e);
+            errored = true;
+        }
         // relaunch実行時は closePlugin するとnotifyのトーストが消えるため、
         // closePlugin のメッセージ引数で結果を伝える
         if (errored) {
@@ -909,18 +943,14 @@ async function refreshAllArrows() {
         else {
             figma.closePlugin("更新対象の矢印が見つかりません");
         }
-        return;
-    }
-    if (errored) {
-        figma.notify("矢印の更新中にエラーが発生しました", { error: true });
-    }
-    else if (count > 0) {
-        figma.notify(`${count}本の矢印を更新しました`);
-    }
-})();
+    })();
+}
+else {
+    arrowIndex = buildArrowIndex();
+}
 // UIからのメッセージ処理
 figma.ui.onmessage = async (msg) => {
-    var _a, _b, _c, _d, _e, _f, _g, _h, _j;
+    var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p, _q, _r;
     try {
         if (msg.type === "connect") {
             const { sourceId, targetId, color, strokeWeight, curved, arrowSize, dashed, startSide, endSide, label } = msg;
@@ -930,13 +960,14 @@ figma.ui.onmessage = async (msg) => {
                 figma.notify("選択したフレームが見つかりません", { error: true });
                 return;
             }
-            const options = { color, strokeWeight, lineType: msg.lineType || (curved ? 'curve' : 'elbow'), curved, dashed, startSide: startSide || "auto", endSide: endSide || "auto", label: label || "", startArrow: (_a = msg.startArrow) !== null && _a !== void 0 ? _a : 'none', endArrow: (_b = msg.endArrow) !== null && _b !== void 0 ? _b : 'arrow', bendPosition: (_c = msg.bendPosition) !== null && _c !== void 0 ? _c : 0.5 };
-            // 既に同じペアの矢印があれば再描画して更新（重複生成を防ぐ）
-            const existing = findExistingArrow(sourceId, targetId);
-            const existingGroup = existing && existing.type === "GROUP" ? existing : undefined;
+            const options = { color, strokeWeight, lineType: msg.lineType || (curved ? 'curve' : 'elbow'), curved, dashed, startSide: startSide || "auto", endSide: endSide || "auto", label: label || "", labelFontSize: (_a = msg.labelFontSize) !== null && _a !== void 0 ? _a : 14, labelBold: (_b = msg.labelBold) !== null && _b !== void 0 ? _b : false, startArrow: (_c = msg.startArrow) !== null && _c !== void 0 ? _c : 'none', endArrow: (_d = msg.endArrow) !== null && _d !== void 0 ? _d : 'arrow', bendPosition: (_e = msg.bendPosition) !== null && _e !== void 0 ? _e : 0.5 };
+            // 既に同じペアの矢印があれば再描画して更新（重複生成を防ぐ）。ページ全体スキャンではなく
+            // メモリ上のarrowIndexから探す
+            const existingId = findExistingArrowIdViaIndex(sourceId, targetId);
+            const existingGroup = existingId ? (_f = await figma.getNodeByIdAsync(existingId)) !== null && _f !== void 0 ? _f : undefined : undefined;
             const arrow = await drawArrow(source, target, options, existingGroup);
             figma.currentPage.selection = [arrow];
-            arrowIndex = buildArrowIndex();
+            patchArrowIndex(existingGroup ? existingGroup.id : null, arrow.id, [sourceId, targetId]);
             figma.notify(existingGroup
                 ? `${source.name} → ${target.name} を更新しました`
                 : `${source.name} → ${target.name} を接続しました`);
@@ -959,11 +990,47 @@ figma.ui.onmessage = async (msg) => {
                 figma.notify("接続先のフレームが削除されています", { error: true });
                 return;
             }
-            const options = { color, strokeWeight, lineType: msg.lineType || (curved ? 'curve' : 'elbow'), curved, dashed, startSide: startSide || "auto", endSide: endSide || "auto", label: label || "", startArrow: (_d = msg.startArrow) !== null && _d !== void 0 ? _d : 'none', endArrow: (_e = msg.endArrow) !== null && _e !== void 0 ? _e : 'arrow', bendPosition: (_f = msg.bendPosition) !== null && _f !== void 0 ? _f : 0.5 };
+            const options = { color, strokeWeight, lineType: msg.lineType || (curved ? 'curve' : 'elbow'), curved, dashed, startSide: startSide || "auto", endSide: endSide || "auto", label: label || "", labelFontSize: (_g = msg.labelFontSize) !== null && _g !== void 0 ? _g : 14, labelBold: (_h = msg.labelBold) !== null && _h !== void 0 ? _h : false, startArrow: (_j = msg.startArrow) !== null && _j !== void 0 ? _j : 'none', endArrow: (_k = msg.endArrow) !== null && _k !== void 0 ? _k : 'arrow', bendPosition: (_l = msg.bendPosition) !== null && _l !== void 0 ? _l : 0.5 };
             const newArrow = await drawArrow(source, target, options, arrowGroup);
             figma.currentPage.selection = [newArrow];
-            arrowIndex = buildArrowIndex();
+            patchArrowIndex(arrowId, newArrow.id, [arrowData.sourceId, arrowData.targetId]);
             figma.notify("矢印を更新しました");
+        }
+        // Label入力中の軽量更新: ラベルが「有→有」の間はテキストノードの文字だけ差し替え、
+        // 矢印本体（ベクター・グループ）は作り直さない。空⇔非空の切り替わりだけは
+        // ラベル用のギャップ分割・テキストノードの新規作成/削除が要るためフル再描画する。
+        if (msg.type === "update-arrow-label") {
+            const { arrowId, label } = msg;
+            const newLabel = label || "";
+            const arrowGroup = await figma.getNodeByIdAsync(arrowId);
+            if (!arrowGroup)
+                return;
+            const arrowData = getArrowData(arrowGroup);
+            if (!arrowData)
+                return;
+            const oldLabel = arrowData.options.label || "";
+            const labelNode = arrowGroup.children.find(n => n.type === "TEXT");
+            if (!!oldLabel === !!newLabel && labelNode) {
+                // テキストだけ差し替え（中心位置を保ったままリサイズ）
+                const cx = labelNode.x + labelNode.width / 2;
+                const cy = labelNode.y + labelNode.height / 2;
+                await figma.loadFontAsync(labelNode.fontName);
+                labelNode.characters = newLabel;
+                labelNode.x = cx - labelNode.width / 2;
+                labelNode.y = cy - labelNode.height / 2;
+                arrowData.options.label = newLabel;
+                arrowGroup.setPluginData(PLUGIN_DATA_KEY, JSON.stringify(arrowData));
+                return;
+            }
+            // 空⇔非空の切り替わり: 構造が変わるのでフル再描画にフォールバック
+            const source = await figma.getNodeByIdAsync(arrowData.sourceId);
+            const target = await figma.getNodeByIdAsync(arrowData.targetId);
+            if (!source || !target)
+                return;
+            const options = Object.assign(Object.assign({}, arrowData.options), { label: newLabel });
+            const newArrow = await drawArrow(source, target, options, arrowGroup);
+            figma.currentPage.selection = [newArrow];
+            patchArrowIndex(arrowId, newArrow.id, [arrowData.sourceId, arrowData.targetId]);
         }
         if (msg.type === "refresh-position") {
             const { arrowId } = msg;
@@ -985,6 +1052,7 @@ figma.ui.onmessage = async (msg) => {
             }
             const newArrow = await drawArrow(source, target, arrowData.options, arrowGroup);
             figma.currentPage.selection = [newArrow];
+            patchArrowIndex(arrowId, newArrow.id, [arrowData.sourceId, arrowData.targetId]);
             figma.notify("矢印の位置を更新しました");
         }
         if (msg.type === "refresh-all") {
@@ -1015,18 +1083,21 @@ figma.ui.onmessage = async (msg) => {
                 figma.notify("接続先のフレームが削除されています", { error: true });
                 return;
             }
-            const options = { color, strokeWeight, lineType: msg.lineType || (curved ? 'curve' : 'elbow'), curved, dashed, startSide: startSide || "auto", endSide: endSide || "auto", label: label || "", startArrow: (_g = msg.startArrow) !== null && _g !== void 0 ? _g : 'none', endArrow: (_h = msg.endArrow) !== null && _h !== void 0 ? _h : 'arrow', bendPosition: (_j = msg.bendPosition) !== null && _j !== void 0 ? _j : 0.5 };
+            const options = { color, strokeWeight, lineType: msg.lineType || (curved ? 'curve' : 'elbow'), curved, dashed, startSide: startSide || "auto", endSide: endSide || "auto", label: label || "", labelFontSize: (_m = msg.labelFontSize) !== null && _m !== void 0 ? _m : 14, labelBold: (_o = msg.labelBold) !== null && _o !== void 0 ? _o : false, startArrow: (_p = msg.startArrow) !== null && _p !== void 0 ? _p : 'none', endArrow: (_q = msg.endArrow) !== null && _q !== void 0 ? _q : 'arrow', bendPosition: (_r = msg.bendPosition) !== null && _r !== void 0 ? _r : 0.5 };
             const newArrow = await drawArrow(source, target, options, arrowGroup);
             figma.currentPage.selection = [newArrow];
-            arrowIndex = buildArrowIndex();
+            patchArrowIndex(arrowId, newArrow.id, [arrowData.sourceId, arrowData.targetId]);
             figma.notify("始点と終点を入れ替えました");
         }
         if (msg.type === "delete-arrow") {
             const { arrowId } = msg;
             const arrowGroup = await figma.getNodeByIdAsync(arrowId);
             if (arrowGroup) {
+                const arrowData = getArrowData(arrowGroup);
                 arrowGroup.remove();
-                arrowIndex = buildArrowIndex();
+                if (arrowData) {
+                    patchArrowIndex(arrowId, null, [arrowData.sourceId, arrowData.targetId]);
+                }
                 figma.notify("矢印を削除しました");
             }
         }
