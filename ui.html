@@ -1000,6 +1000,25 @@
     let currentArrowId = null;
     let startPicker = null, endPicker = null;
     let editStartPicker = null, editEndPicker = null;
+    let editDebounceTimer = null;
+    let labelDebounceTimer = null;
+
+    function cancelPendingEditUpdates() {
+      clearTimeout(editDebounceTimer);
+      clearTimeout(labelDebounceTimer);
+      editDebounceTimer = null;
+      labelDebounceTimer = null;
+    }
+
+    function appendFrameItemContent(container, name, color) {
+      const dot = document.createElement('div');
+      dot.className = 'dot';
+      dot.style.background = color;
+      const nameEl = document.createElement('span');
+      nameEl.className = 'name';
+      nameEl.textContent = String(name ?? '');
+      container.append(dot, nameEl);
+    }
 
     const createMode = document.getElementById('createMode');
     const editMode = document.getElementById('editMode');
@@ -1131,7 +1150,19 @@
         for (const it of items) {
           const el = document.createElement('div');
           el.className = 'dd-item';
-          el.innerHTML = `<div class="dd-swatch" style="background:${it.hex}"></div><div class="dd-info"><div class="dd-name">${it.name}</div><div class="dd-hex">${it.hex}</div></div>`;
+          const swatch = document.createElement('div');
+          swatch.className = 'dd-swatch';
+          swatch.style.background = it.hex;
+          const info = document.createElement('div');
+          info.className = 'dd-info';
+          const name = document.createElement('div');
+          name.className = 'dd-name';
+          name.textContent = String(it.name ?? '');
+          const hex = document.createElement('div');
+          hex.className = 'dd-hex';
+          hex.textContent = String(it.hex ?? '');
+          info.append(name, hex);
+          el.append(swatch, info);
           el.addEventListener('click', (e) => {
             e.stopPropagation();
             document.getElementById(pickerId).value = it.hex;
@@ -1197,15 +1228,19 @@
 
     // ---- Messages ----
     window.onmessage = (event) => {
-      const msg = event.data.pluginMessage;
+      const msg = event.data && event.data.pluginMessage;
+      if (!msg || typeof msg !== 'object' || typeof msg.type !== 'string') return;
 
       if (msg.type === 'color-swatches') {
+        if (!Array.isArray(msg.swatches)) return;
         allSwatches = msg.swatches;
-        allPageSwatches = msg.pageSwatches || [];
+        allPageSwatches = Array.isArray(msg.pageSwatches) ? msg.pageSwatches : [];
         renderSwatchGrids();
       }
 
       if (msg.type === 'selection-update') {
+        if (!Array.isArray(msg.frames)) return;
+        cancelPendingEditUpdates();
         frames = msg.frames;
         currentArrowId = null;
         createMode.style.display = 'flex';
@@ -1221,6 +1256,9 @@
       }
 
       if (msg.type === 'edit-arrow') {
+        if (typeof msg.arrowId !== 'string' || !msg.options || typeof msg.options !== 'object') return;
+        if (typeof msg.options.color !== 'string') return;
+        cancelPendingEditUpdates();
         currentArrowId = msg.arrowId;
         createMode.style.display = 'none';
         editMode.style.display = 'flex';
@@ -1232,7 +1270,7 @@
           row.className = 'frame-row';
           const fi = document.createElement('div');
           fi.className = 'frame-item';
-          fi.innerHTML = `<div class="dot" style="background:${item.e ? item.c : '#ccc'}"></div><span class="name">${item.n}</span>`;
+          appendFrameItemContent(fi, item.n, item.e ? item.c : '#ccc');
           row.appendChild(fi);
           const ph = document.createElement('span');
           row.appendChild(ph);
@@ -1285,7 +1323,7 @@
         row.className = 'frame-row';
         const fi = document.createElement('div');
         fi.className = 'frame-item';
-        fi.innerHTML = `<div class="dot" style="background:${colors[i]}"></div><span class="name">${f.name}</span>`;
+        appendFrameItemContent(fi, f.name, colors[i]);
         row.appendChild(fi);
         const ph = document.createElement('span');
         row.appendChild(ph);
@@ -1301,10 +1339,15 @@
 
     // ---- Prefs ----
     const STORAGE_KEY = 'arrow-connector-prefs';
+    function readStrokeWeight(input, fallback = 2) {
+      const value = parseFloat(input.value);
+      if (!Number.isFinite(value)) return fallback;
+      return Math.round(Math.max(0.5, Math.min(20, value)) * 10) / 10;
+    }
     function savePrefs() {
       const p = {
         color: colorPicker.value,
-        strokeWeight: parseFloat(strokeWeight.value),
+        strokeWeight: readStrokeWeight(strokeWeight),
         lineType: lineTypeCreate.getValue(),
         dashed: document.getElementById('dashed').checked,
         arrowDirStart: arrowDirCreate.getValue().start,
@@ -1337,7 +1380,7 @@
     function getCreateOpts() {
       const a = arrowDirCreate.getArrows();
       const o = {
-        color: colorPicker.value, strokeWeight: parseFloat(strokeWeight.value),
+        color: colorPicker.value, strokeWeight: readStrokeWeight(strokeWeight),
         lineType: lineTypeCreate.getValue(), curved: lineTypeCreate.getValue() === 'curve',
         dashed: document.getElementById('dashed').checked,
         startSide: startPicker ? startPicker.getValue() : 'auto',
@@ -1354,7 +1397,7 @@
     function getEditOpts() {
       const a = arrowDirEdit.getArrows();
       const o = {
-        color: editColorPicker.value, strokeWeight: parseFloat(editStrokeWeight.value),
+        color: editColorPicker.value, strokeWeight: readStrokeWeight(editStrokeWeight),
         lineType: lineTypeEdit.getValue(), curved: lineTypeEdit.getValue() === 'curve',
         dashed: document.getElementById('editDashed').checked,
         startSide: editStartPicker ? editStartPicker.getValue() : 'auto',
@@ -1433,32 +1476,30 @@
     window.addEventListener('beforeunload', savePrefs);
     window.addEventListener('pagehide', savePrefs);
     // ---- Edit mode: 即時反映 ----
-    let editDebounceTimer = null;
     function sendEditUpdate() {
       if (!currentArrowId) return;
+      const arrowId = currentArrowId;
       clearTimeout(editDebounceTimer);
       editDebounceTimer = setTimeout(() => {
+        if (currentArrowId !== arrowId) return;
         const o = getEditOpts();
-        parent.postMessage({ pluginMessage: { type: 'update-arrow', arrowId: currentArrowId, ...o } }, '*');
+        parent.postMessage({ pluginMessage: { type: 'update-arrow', arrowId, ...o } }, '*');
       }, 80);
     }
     // Label入力は矢印全体を作り直さず、テキストだけ差し替える軽量経路を使う
-    let labelDebounceTimer = null;
     function sendLabelUpdate() {
       if (!currentArrowId) return;
+      const arrowId = currentArrowId;
       clearTimeout(labelDebounceTimer);
       labelDebounceTimer = setTimeout(() => {
+        if (currentArrowId !== arrowId) return;
         const label = document.getElementById('editLabelInput').value;
-        parent.postMessage({ pluginMessage: { type: 'update-arrow-label', arrowId: currentArrowId, label } }, '*');
+        parent.postMessage({ pluginMessage: { type: 'update-arrow-label', arrowId, label } }, '*');
       }, 80);
     }
     // strokeWeight バリデーション（0.5〜20、小数第1位まで）+ 上下キー対応
     function clampWeight(input) {
-      let v = parseFloat(input.value);
-      if (isNaN(v) || v < 0.5) v = 0.5;
-      if (v > 20) v = 20;
-      v = Math.round(v * 10) / 10;
-      input.value = v;
+      input.value = readStrokeWeight(input, 0.5);
     }
     function weightKeydown(e) {
       if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {

@@ -526,9 +526,9 @@ async function drawArrow(nodeA, nodeB, options, existingGroup) {
             : -1;
         // 古い矢印のpluginDataを退避
         const savedData = existingGroup.getPluginData(PLUGIN_DATA_KEY);
-        // 既存グループを削除して新しいグループを同じ場所に作成
-        existingGroup.remove();
+        // 新しいグループの作成に失敗しても既存矢印を失わないよう、作成成功後に削除する
         groupNode = figma.group(children, parent);
+        existingGroup.remove();
         // 元の z-index 位置に戻す（figma.group は親末尾に追加されるため）
         if (index >= 0 && "insertChild" in parent) {
             try {
@@ -555,13 +555,26 @@ async function drawArrow(nodeA, nodeB, options, existingGroup) {
     groupNode.setRelaunchData({ "refresh-all": "" });
     return groupNode;
 }
+// 保存済みデータに後から追加されたオプションの既定値を補う
+function normalizeArrowOptions(options) {
+    var _a, _b;
+    return Object.assign(Object.assign({}, options), { labelFontSize: (_a = options.labelFontSize) !== null && _a !== void 0 ? _a : 14, labelBold: (_b = options.labelBold) !== null && _b !== void 0 ? _b : false });
+}
 // 選択されたノードから矢印グループのデータを取得
 function getArrowData(node) {
     const raw = node.getPluginData(PLUGIN_DATA_KEY);
     if (!raw)
         return null;
     try {
-        return JSON.parse(raw);
+        const parsed = JSON.parse(raw);
+        if (!parsed ||
+            typeof parsed.sourceId !== "string" ||
+            typeof parsed.targetId !== "string" ||
+            !parsed.options ||
+            typeof parsed.options !== "object") {
+            return null;
+        }
+        return Object.assign(Object.assign({}, parsed), { options: normalizeArrowOptions(parsed.options) });
     }
     catch (_a) {
         return null;
@@ -595,7 +608,9 @@ function isConnectable(n) {
     }
 }
 // 選択状態をUIに送信
+let selectionStateRequestId = 0;
 async function sendSelectionState() {
+    const requestId = ++selectionStateRequestId;
     const selection = figma.currentPage.selection;
     // 既存の矢印が選択されているかチェック
     if (selection.length === 1) {
@@ -603,6 +618,8 @@ async function sendSelectionState() {
         if (arrowData) {
             const source = await figma.getNodeByIdAsync(arrowData.sourceId);
             const target = await figma.getNodeByIdAsync(arrowData.targetId);
+            if (requestId !== selectionStateRequestId)
+                return;
             figma.ui.postMessage({
                 type: "edit-arrow",
                 arrowId: selection[0].id,
@@ -633,9 +650,11 @@ async function sendSelectionState() {
     });
 }
 // 選択変更の監視
-figma.on("selectionchange", sendSelectionState);
+figma.on("selectionchange", () => {
+    void sendSelectionState().catch((e) => console.error("sendSelectionState failed:", e));
+});
 // 初期状態送信
-sendSelectionState();
+void sendSelectionState().catch((e) => console.error("sendSelectionState failed:", e));
 // ページにrelaunchボタンを設定
 figma.currentPage.setRelaunchData({ "refresh-all": "全矢印の位置を更新" });
 // カラースタイル・バリアブルをUIに送信
@@ -872,6 +891,7 @@ function attachNodeChangeListener() {
 attachNodeChangeListener();
 // ページ切り替え時にリスナーを張り直し、進行中のデバウンスとインデックスをリセットする
 figma.on("currentpagechange", () => {
+    selectionStateRequestId++;
     pendingNodeIds.clear();
     if (updateTimer !== null) {
         clearTimeout(updateTimer);
@@ -951,6 +971,8 @@ else {
 // UIからのメッセージ処理
 figma.ui.onmessage = async (msg) => {
     var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p, _q, _r;
+    if (!msg || typeof msg !== "object" || typeof msg.type !== "string")
+        return;
     try {
         if (msg.type === "connect") {
             const { sourceId, targetId, color, strokeWeight, curved, arrowSize, dashed, startSide, endSide, label } = msg;
