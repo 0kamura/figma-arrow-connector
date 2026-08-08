@@ -7,7 +7,7 @@ const isRelaunch = figma.command === "refresh-all";
 // 扱わないため機能面の影響はない
 figma.skipInvisibleInstanceChildren = true;
 
-figma.showUI(__html__, { width: 340, height: 586, themeColors: true, visible: !isRelaunch });
+figma.showUI(__html__, { width: 340, height: 560, themeColors: true, visible: !isRelaunch });
 
 const PLUGIN_DATA_KEY = "arrow-connector-data";
 
@@ -1295,7 +1295,7 @@ figma.ui.onmessage = async (msg) => {
 
   if (msg.type === "resize") {
     const w = Math.max(200, Math.min(800, Number(msg.width) || 340));
-    const h = Math.max(80, Math.min(800, Number(msg.height) || 586));
+    const h = Math.max(80, Math.min(800, Number(msg.height) || 560));
     figma.ui.resize(w, h);
   }
 

@@ -20,7 +20,7 @@
       font-size: 12px;
       font-weight: 400;
       color: var(--c-text);
-      padding: 14px 16px 32px;
+      padding: 14px 16px 8px;
       background: var(--c-bg);
       line-height: 1;
     }
@@ -614,14 +614,27 @@
     /* ---- Buttons ---- */
     .btn {
       width: 100%;
-      padding: 12px;
+      min-height: 44px;
+      padding: 7px 8px;
       border: none;
       border-radius: 8px;
-      font-size: 16px;
       font-weight: 400;
       font-family: 'Inter', inherit;
       cursor: pointer;
       transition: all 0.15s;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 2px;
+      line-height: 1;
+    }
+    .btn-label-en {
+      font-size: 14px;
+    }
+    .btn-label-ja {
+      font-size: 10px;
+      opacity: 0.72;
     }
     .btn-primary {
       background: var(--c-text);
@@ -646,8 +659,13 @@
     .btn-row .btn { flex: 1; }
     .btn-stack {
       display: flex;
-      flex-direction: column;
+      flex-direction: row;
       gap: 8px;
+    }
+    .btn-stack .btn {
+      width: auto;
+      min-width: 0;
+      flex: 1;
     }
     .hint {
       font-size: 11px;
@@ -787,8 +805,14 @@
     </div>
 
     <div class="btn-stack">
-      <button class="btn btn-primary" id="connectBtn" disabled>Create Arrow</button>
-      <button class="btn btn-outline" id="relaunchBtn">Relaunch</button>
+      <button class="btn btn-primary" id="connectBtn" disabled>
+        <span class="btn-label-en" lang="en">Create Arrow</span>
+        <span class="btn-label-ja" lang="ja">矢印を作成</span>
+      </button>
+      <button class="btn btn-outline" id="relaunchBtn">
+        <span class="btn-label-en" lang="en">Refresh</span>
+        <span class="btn-label-ja" lang="ja">矢印を更新</span>
+      </button>
     </div>
     <div class="hint" id="hint">Select 2 frames to connect</div>
   </div>
@@ -973,7 +997,7 @@
 
     // ---- Minimize ----
     const MINIMIZE_KEY = 'arrow-connector-minimized';
-    const EXPANDED_SIZE = { w: 340, h: 586 };
+    const EXPANDED_SIZE = { w: 340, h: 560 };
     const MINIMIZED_SIZE = { w: 340, h: 270 };
     const ICON_MINIMIZE = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10l5-5 5 5"/></svg>';
     const ICON_EXPAND   = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6l5 5 5-5"/></svg>';
