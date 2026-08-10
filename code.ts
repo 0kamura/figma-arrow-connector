@@ -45,6 +45,11 @@ interface ArrowData {
   options: ArrowOptions;
 }
 
+interface RefreshLineStyle {
+  strokeWeight?: number;
+  dashed?: boolean;
+}
+
 // ノードの絶対座標バウンディングボックスを取得
 function getAbsBounds(node: SceneNode): { x: number; y: number; width: number; height: number } {
   const bb = node.absoluteBoundingBox;
@@ -681,6 +686,23 @@ function normalizeArrowOptions(options: ArrowOptions): ArrowOptions {
   };
 }
 
+// Refreshでは現在のUIで指定された線幅・破線だけを上書きし、経路やラベル等は保持する
+function applyRefreshLineStyle(
+  options: ArrowOptions,
+  style?: RefreshLineStyle
+): ArrowOptions {
+  if (!style) return options;
+
+  const next = { ...options };
+  if (typeof style.strokeWeight === "number" && Number.isFinite(style.strokeWeight)) {
+    next.strokeWeight = Math.round(Math.max(0.5, Math.min(20, style.strokeWeight)) * 10) / 10;
+  }
+  if (typeof style.dashed === "boolean") {
+    next.dashed = style.dashed;
+  }
+  return next;
+}
+
 // 選択されたノードから矢印グループのデータを取得
 function getArrowData(node: SceneNode): ArrowData | null {
   const raw = node.getPluginData(PLUGIN_DATA_KEY);
@@ -1043,7 +1065,7 @@ figma.on("currentpagechange", () => {
 });
 
 // 全矢印を更新（ネストした矢印グループも対象）
-async function refreshAllArrows(): Promise<number> {
+async function refreshAllArrows(style?: RefreshLineStyle): Promise<number> {
   let count = 0;
   // 走査中に drawArrow が新しいグループを作成するため、
   // 必ずスナップショットをイテレートする（ライブ参照だと無限ループの危険）
@@ -1062,7 +1084,8 @@ async function refreshAllArrows(): Promise<number> {
         const source = await figma.getNodeByIdAsync(arrowData.sourceId) as SceneNode;
         const target = await figma.getNodeByIdAsync(arrowData.targetId) as SceneNode;
         if (source && target) {
-          const newArrow = await drawArrow(source, target, arrowData.options, node as GroupNode);
+          const options = applyRefreshLineStyle(arrowData.options, style);
+          const newArrow = await drawArrow(source, target, options, node as GroupNode);
           count++;
           for (const fid of [arrowData.sourceId, arrowData.targetId]) {
             const list = newIndex.get(fid) || [];
@@ -1240,7 +1263,10 @@ figma.ui.onmessage = async (msg) => {
   }
 
   if (msg.type === "refresh-all") {
-    const count = await refreshAllArrows();
+    const count = await refreshAllArrows({
+      strokeWeight: msg.strokeWeight,
+      dashed: msg.dashed,
+    });
     if (count === 0) {
       figma.notify("更新対象の矢印が見つかりません");
     } else {

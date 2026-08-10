@@ -34,6 +34,16 @@ function loadQuickConnectPolicy() {
   return new Function(`${uiSource.slice(start, end)}\nreturn shouldQuickConnect;`)();
 }
 
+function loadSelectWeightOnFocus() {
+  const start = uiSource.indexOf('function selectWeightOnFocus(');
+  const end = uiSource.indexOf("\n    strokeWeight.addEventListener('focus'", start);
+
+  assert.notEqual(start, -1, 'selectWeightOnFocus must exist');
+  assert.notEqual(end, -1, 'selectWeightOnFocus must be registered after its definition');
+
+  return new Function(`${uiSource.slice(start, end)}\nreturn selectWeightOnFocus;`)();
+}
+
 test('ignores message events without a Figma pluginMessage payload', () => {
   const handler = loadMessageHandlerPrefix();
 
@@ -77,6 +87,28 @@ test('create and edit options use a finite validated stroke weight', () => {
   assert.match(uiSource, /function readStrokeWeight\(input, fallback = 2\)/);
   assert.match(uiSource, /strokeWeight: readStrokeWeight\(strokeWeight\)/);
   assert.match(uiSource, /strokeWeight: readStrokeWeight\(editStrokeWeight\)/);
+});
+
+test('focusing a stroke weight field selects its existing value for replacement', () => {
+  const selectWeightOnFocus = loadSelectWeightOnFocus();
+  let selected = false;
+
+  selectWeightOnFocus({ currentTarget: { select: () => { selected = true; } } });
+
+  assert.equal(selected, true);
+  assert.match(uiSource, /strokeWeight\.addEventListener\('focus', selectWeightOnFocus\)/);
+  assert.match(uiSource, /editStrokeWeight\.addEventListener\('focus', selectWeightOnFocus\)/);
+});
+
+test('refresh sends the current stroke weight and dashed setting', () => {
+  const refreshHandler = uiSource.slice(
+    uiSource.indexOf("document.getElementById('relaunchBtn').addEventListener"),
+    uiSource.indexOf('// ---- Persist create-mode changes immediately ----')
+  );
+
+  assert.match(refreshHandler, /strokeWeight: readStrokeWeight\(strokeWeight\)/);
+  assert.match(refreshHandler, /dashed: document\.getElementById\('dashed'\)\.checked/);
+  assert.match(refreshHandler, /type: 'refresh-all', \.\.\.lineStyle/);
 });
 
 test('quick connect only fires after startup for a new pair of exactly two frames', () => {

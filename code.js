@@ -560,6 +560,19 @@ function normalizeArrowOptions(options) {
     var _a, _b;
     return Object.assign(Object.assign({}, options), { labelFontSize: (_a = options.labelFontSize) !== null && _a !== void 0 ? _a : 14, labelBold: (_b = options.labelBold) !== null && _b !== void 0 ? _b : false });
 }
+// Refreshでは現在のUIで指定された線幅・破線だけを上書きし、経路やラベル等は保持する
+function applyRefreshLineStyle(options, style) {
+    if (!style)
+        return options;
+    const next = Object.assign({}, options);
+    if (typeof style.strokeWeight === "number" && Number.isFinite(style.strokeWeight)) {
+        next.strokeWeight = Math.round(Math.max(0.5, Math.min(20, style.strokeWeight)) * 10) / 10;
+    }
+    if (typeof style.dashed === "boolean") {
+        next.dashed = style.dashed;
+    }
+    return next;
+}
 // 選択されたノードから矢印グループのデータを取得
 function getArrowData(node) {
     const raw = node.getPluginData(PLUGIN_DATA_KEY);
@@ -901,7 +914,7 @@ figma.on("currentpagechange", () => {
     arrowIndex = buildArrowIndex();
 });
 // 全矢印を更新（ネストした矢印グループも対象）
-async function refreshAllArrows() {
+async function refreshAllArrows(style) {
     let count = 0;
     // 走査中に drawArrow が新しいグループを作成するため、
     // 必ずスナップショットをイテレートする（ライブ参照だと無限ループの危険）
@@ -921,7 +934,8 @@ async function refreshAllArrows() {
                 const source = await figma.getNodeByIdAsync(arrowData.sourceId);
                 const target = await figma.getNodeByIdAsync(arrowData.targetId);
                 if (source && target) {
-                    const newArrow = await drawArrow(source, target, arrowData.options, node);
+                    const options = applyRefreshLineStyle(arrowData.options, style);
+                    const newArrow = await drawArrow(source, target, options, node);
                     count++;
                     for (const fid of [arrowData.sourceId, arrowData.targetId]) {
                         const list = newIndex.get(fid) || [];
@@ -1078,7 +1092,10 @@ figma.ui.onmessage = async (msg) => {
             figma.notify("矢印の位置を更新しました");
         }
         if (msg.type === "refresh-all") {
-            const count = await refreshAllArrows();
+            const count = await refreshAllArrows({
+                strokeWeight: msg.strokeWeight,
+                dashed: msg.dashed,
+            });
             if (count === 0) {
                 figma.notify("更新対象の矢印が見つかりません");
             }

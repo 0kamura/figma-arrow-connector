@@ -1544,7 +1544,12 @@
 
     connectBtn.addEventListener('click', createArrowFromSelection);
     document.getElementById('relaunchBtn').addEventListener('click', () => {
-      parent.postMessage({ pluginMessage: { type: 'refresh-all' } }, '*');
+      const lineStyle = {
+        strokeWeight: readStrokeWeight(strokeWeight),
+        dashed: document.getElementById('dashed').checked,
+      };
+      savePrefs();
+      parent.postMessage({ pluginMessage: { type: 'refresh-all', ...lineStyle } }, '*');
     });
 
     // ---- Persist create-mode changes immediately ----
@@ -1609,8 +1614,13 @@
         e.target.dispatchEvent(new Event('input'));
       }
     }
+    function selectWeightOnFocus(e) {
+      e.currentTarget.select();
+    }
+    strokeWeight.addEventListener('focus', selectWeightOnFocus);
     strokeWeight.addEventListener('blur', () => clampWeight(strokeWeight));
     strokeWeight.addEventListener('keydown', weightKeydown);
+    editStrokeWeight.addEventListener('focus', selectWeightOnFocus);
     editStrokeWeight.addEventListener('blur', () => clampWeight(editStrokeWeight));
     editStrokeWeight.addEventListener('keydown', weightKeydown);
 
