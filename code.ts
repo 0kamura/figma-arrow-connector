@@ -46,8 +46,11 @@ interface ArrowData {
 }
 
 interface RefreshLineStyle {
+  color?: string;
   strokeWeight?: number;
+  lineType?: string;
   dashed?: boolean;
+  bendPosition?: number;
 }
 
 // ノードの絶対座標バウンディングボックスを取得
@@ -672,7 +675,7 @@ async function drawArrow(
     options,
   };
   groupNode.setPluginData(PLUGIN_DATA_KEY, JSON.stringify(arrowData));
-  groupNode.setRelaunchData({ "refresh-all": "" });
+  groupNode.setRelaunchData({});
 
   return groupNode;
 }
@@ -694,13 +697,96 @@ function applyRefreshLineStyle(
   if (!style) return options;
 
   const next = { ...options };
+  if (typeof style.color === "string" && /^#[0-9a-f]{6}$/i.test(style.color)) {
+    next.color = style.color;
+  }
   if (typeof style.strokeWeight === "number" && Number.isFinite(style.strokeWeight)) {
     next.strokeWeight = Math.round(Math.max(0.5, Math.min(20, style.strokeWeight)) * 10) / 10;
+  }
+  if (
+    typeof style.lineType === "string" &&
+    ["straight", "elbow-l", "elbow-z", "curve"].includes(style.lineType)
+  ) {
+    next.lineType = style.lineType;
+    next.curved = style.lineType === "curve";
   }
   if (typeof style.dashed === "boolean") {
     next.dashed = style.dashed;
   }
+  if (typeof style.bendPosition === "number" && Number.isFinite(style.bendPosition)) {
+    next.bendPosition = Math.round(Math.max(0.05, Math.min(0.95, style.bendPosition)) * 100) / 100;
+  }
   return next;
+}
+
+function buildInPlaceStylePatch(
+  previous: ArrowOptions,
+  next: ArrowOptions
+): RefreshLineStyle | null {
+  const redrawKeys: Array<keyof ArrowOptions> = [
+    "lineType",
+    "curved",
+    "startSide",
+    "endSide",
+    "label",
+    "labelFontSize",
+    "labelBold",
+    "startArrow",
+    "endArrow",
+    "bendPosition",
+  ];
+  if (redrawKeys.some(key => previous[key] !== next[key])) return null;
+
+  const patch: RefreshLineStyle = {};
+  if (previous.color !== next.color) patch.color = next.color;
+  if (previous.strokeWeight !== next.strokeWeight) patch.strokeWeight = next.strokeWeight;
+  if (previous.dashed !== next.dashed) patch.dashed = next.dashed;
+  return Object.keys(patch).length > 0 ? patch : null;
+}
+
+// 色・線幅・破線だけの変更は既存ベクターへ直接反映し、手動調整された経路を保持する。
+// 線種・折れ位置の変更や変更項目なし（位置更新）は再描画が必要なので false を返す。
+function applyRefreshStyleInPlace(
+  group: GroupNode,
+  options: ArrowOptions,
+  style?: RefreshLineStyle
+): boolean {
+  if (!style) return false;
+
+  const changesGeometry =
+    (typeof style.lineType === "string" &&
+      ["straight", "elbow-l", "elbow-z", "curve"].includes(style.lineType)) ||
+    (typeof style.bendPosition === "number" && Number.isFinite(style.bendPosition));
+  if (changesGeometry) return false;
+
+  const changesColor =
+    typeof style.color === "string" && /^#[0-9a-f]{6}$/i.test(style.color);
+  const changesWeight =
+    typeof style.strokeWeight === "number" && Number.isFinite(style.strokeWeight);
+  const changesDash = typeof style.dashed === "boolean";
+  if (!changesColor && !changesWeight && !changesDash) return false;
+
+  const vectors = group.findAll(node => node.type === "VECTOR") as VectorNode[];
+  for (const vector of vectors) {
+    if (changesColor) {
+      vector.strokes = [{ type: "SOLID", color: hexToRgb(options.color) }];
+    }
+    if (changesWeight) {
+      vector.strokeWeight = options.strokeWeight;
+    }
+    if (changesDash) {
+      vector.dashPattern = options.dashed ? [8, 6] : [];
+    }
+  }
+
+  if (changesColor) {
+    const labels = group.findAll(node => node.type === "TEXT") as TextNode[];
+    for (const label of labels) {
+      label.fills = [{ type: "SOLID", color: hexToRgb(options.color) }];
+    }
+  }
+
+  return true;
 }
 
 // 選択されたノードから矢印グループのデータを取得
@@ -725,6 +811,23 @@ function getArrowData(node: SceneNode): ArrowData | null {
   } catch {
     return null;
   }
+}
+
+// 現在表示しているキャンバスの中央へ、矢印の接続先に使える支点Frameを追加する
+function createPointFrame(): FrameNode {
+  const size = 32;
+  const center = figma.viewport.center;
+  const point = figma.createFrame();
+
+  point.name = "Point";
+  point.resize(size, size);
+  point.x = center.x - size / 2;
+  point.y = center.y - size / 2;
+  point.cornerRadius = size / 2;
+  point.fills = [{ type: "SOLID", color: { r: 0, g: 0, b: 0 } }];
+  figma.currentPage.selection = [point];
+
+  return point;
 }
 
 // 接続可能なノードか（フレーム系 + シェイプ/テキスト等のオブジェクト）
@@ -754,22 +857,37 @@ function isConnectable(n: SceneNode): boolean {
   }
 }
 
+// 更新ボタンはページに1件だけ表示し、旧バージョンが矢印グループに
+// 保存した同名ボタンを解除する。
+function syncRefreshRelaunchData(
+  page: PageNode,
+  arrowGroups: readonly GroupNode[]
+): void {
+  page.setRelaunchData({ "refresh-all": "全矢印の位置を更新" });
+  for (const arrowGroup of arrowGroups) {
+    arrowGroup.setRelaunchData({});
+  }
+}
+
 // 選択状態をUIに送信
 let selectionStateRequestId = 0;
 async function sendSelectionState() {
   const requestId = ++selectionStateRequestId;
   const selection = figma.currentPage.selection;
+  const selectedArrows = selection.filter(
+    (node): node is GroupNode => node.type === "GROUP" && !!getArrowData(node)
+  );
 
   // 既存の矢印が選択されているかチェック
-  if (selection.length === 1) {
-    const arrowData = getArrowData(selection[0]);
+  if (selection.length === 1 && selectedArrows.length === 1) {
+    const arrowData = getArrowData(selectedArrows[0]);
     if (arrowData) {
       const source = await figma.getNodeByIdAsync(arrowData.sourceId);
       const target = await figma.getNodeByIdAsync(arrowData.targetId);
       if (requestId !== selectionStateRequestId) return;
       figma.ui.postMessage({
         type: "edit-arrow",
-        arrowId: selection[0].id,
+        arrowId: selectedArrows[0].id,
         sourceName: source ? source.name : "(削除済み)",
         targetName: target ? target.name : "(削除済み)",
         sourceExists: !!source,
@@ -795,6 +913,7 @@ async function sendSelectionState() {
   figma.ui.postMessage({
     type: "selection-update",
     frames: frames.map((f) => ({ id: f.id, name: f.name })),
+    selectedArrowCount: selectedArrows.length,
     autoStartSide,
     autoEndSide,
   });
@@ -808,8 +927,7 @@ figma.on("selectionchange", () => {
 // 初期状態送信
 void sendSelectionState().catch((e) => console.error("sendSelectionState failed:", e));
 
-// ページにrelaunchボタンを設定
-figma.currentPage.setRelaunchData({ "refresh-all": "全矢印の位置を更新" });
+syncRefreshRelaunchData(figma.currentPage, []);
 
 // カラースタイル・バリアブルをUIに送信
 async function sendColorSwatches() {
@@ -901,6 +1019,7 @@ sendColorSwatches();
 // frameId → arrowGroupId[] のマッピングを構築（ネストした矢印グループも対象）
 function buildArrowIndex(): Map<string, string[]> {
   const index = new Map<string, string[]>();
+  const arrowGroups: GroupNode[] = [];
   const snapshot = figma.currentPage.findAllWithCriteria({
     types: ["GROUP"],
     pluginData: { keys: [PLUGIN_DATA_KEY] },
@@ -908,6 +1027,7 @@ function buildArrowIndex(): Map<string, string[]> {
   for (const node of snapshot) {
     const data = getArrowData(node);
     if (data) {
+      arrowGroups.push(node);
       for (const fid of [data.sourceId, data.targetId]) {
         const list = index.get(fid) || [];
         list.push(node.id);
@@ -915,6 +1035,7 @@ function buildArrowIndex(): Map<string, string[]> {
       }
     }
   }
+  syncRefreshRelaunchData(figma.currentPage, arrowGroups);
   return index;
 }
 
@@ -1064,15 +1185,33 @@ figma.on("currentpagechange", () => {
   arrowIndex = buildArrowIndex();
 });
 
-// 全矢印を更新（ネストした矢印グループも対象）
-async function refreshAllArrows(style?: RefreshLineStyle): Promise<number> {
+function selectRefreshSnapshot(
+  selected: readonly GroupNode[],
+  scanAll: () => GroupNode[]
+): readonly GroupNode[] {
+  return selected.length > 0 ? selected : scanAll();
+}
+
+// 全矢印または選択中の矢印を更新（ネストした矢印グループも対象）
+async function refreshAllArrows(
+  style?: RefreshLineStyle,
+  selectedArrows: readonly GroupNode[] = []
+): Promise<number> {
   let count = 0;
+  const updatesSelection = selectedArrows.length > 0;
+  const selectedIds = new Set(selectedArrows.map(node => node.id));
+  const preservedSelection = updatesSelection
+    ? figma.currentPage.selection.filter(node => !selectedIds.has(node.id))
+    : [];
+  const refreshedSelection: SceneNode[] = [];
   // 走査中に drawArrow が新しいグループを作成するため、
   // 必ずスナップショットをイテレートする（ライブ参照だと無限ループの危険）
-  const snapshot = figma.currentPage.findAllWithCriteria({
-    types: ["GROUP"],
-    pluginData: { keys: [PLUGIN_DATA_KEY] },
-  });
+  const snapshot = selectRefreshSnapshot(selectedArrows, () =>
+    figma.currentPage.findAllWithCriteria({
+      types: ["GROUP"],
+      pluginData: { keys: [PLUGIN_DATA_KEY] },
+    })
+  );
   const newIndex = new Map<string, string[]>();
   const processed = new Set<string>();
   for (const node of snapshot) {
@@ -1084,13 +1223,31 @@ async function refreshAllArrows(style?: RefreshLineStyle): Promise<number> {
         const source = await figma.getNodeByIdAsync(arrowData.sourceId) as SceneNode;
         const target = await figma.getNodeByIdAsync(arrowData.targetId) as SceneNode;
         if (source && target) {
+          const oldArrowId = node.id;
           const options = applyRefreshLineStyle(arrowData.options, style);
-          const newArrow = await drawArrow(source, target, options, node as GroupNode);
+          let newArrow: GroupNode;
+          const updatedInPlace = applyRefreshStyleInPlace(node as GroupNode, options, style);
+          if (updatedInPlace) {
+            newArrow = node as GroupNode;
+            newArrow.setPluginData(PLUGIN_DATA_KEY, JSON.stringify({
+              ...arrowData,
+              options,
+            }));
+          } else {
+            newArrow = await drawArrow(source, target, options, node as GroupNode);
+          }
           count++;
-          for (const fid of [arrowData.sourceId, arrowData.targetId]) {
-            const list = newIndex.get(fid) || [];
-            list.push(newArrow.id);
-            newIndex.set(fid, list);
+          if (updatesSelection) {
+            if (!updatedInPlace) {
+              patchArrowIndex(oldArrowId, newArrow.id, [arrowData.sourceId, arrowData.targetId]);
+            }
+            refreshedSelection.push(newArrow);
+          } else {
+            for (const fid of [arrowData.sourceId, arrowData.targetId]) {
+              const list = newIndex.get(fid) || [];
+              list.push(newArrow.id);
+              newIndex.set(fid, list);
+            }
           }
         }
       }
@@ -1099,7 +1256,11 @@ async function refreshAllArrows(style?: RefreshLineStyle): Promise<number> {
     }
   }
   // このスキャンで見つかったスナップショットからそのまま組み立てる（buildArrowIndexの再スキャンは不要）
-  arrowIndex = newIndex;
+  if (updatesSelection) {
+    figma.currentPage.selection = [...preservedSelection, ...refreshedSelection];
+  } else {
+    arrowIndex = newIndex;
+  }
   return count;
 }
 
@@ -1134,6 +1295,11 @@ if (isRelaunch) {
 figma.ui.onmessage = async (msg) => {
   if (!msg || typeof msg !== "object" || typeof msg.type !== "string") return;
   try {
+  if (msg.type === "add-point") {
+    createPointFrame();
+    figma.notify("支点を追加しました");
+  }
+
   if (msg.type === "connect") {
     const { sourceId, targetId, color, strokeWeight, curved, arrowSize, dashed, startSide, endSide, label } = msg;
 
@@ -1184,7 +1350,14 @@ figma.ui.onmessage = async (msg) => {
     }
 
     const options: ArrowOptions = { color, strokeWeight, lineType: msg.lineType || (curved ? 'curve' : 'elbow'), curved, dashed, startSide: startSide || "auto", endSide: endSide || "auto", label: label || "", labelFontSize: msg.labelFontSize ?? 14, labelBold: msg.labelBold ?? false, startArrow: msg.startArrow ?? 'none', endArrow: msg.endArrow ?? 'arrow', bendPosition: msg.bendPosition ?? 0.5 };
-    const newArrow = await drawArrow(source, target, options, arrowGroup);
+    const stylePatch = buildInPlaceStylePatch(arrowData.options, options);
+    let newArrow: GroupNode;
+    if (stylePatch && applyRefreshStyleInPlace(arrowGroup, options, stylePatch)) {
+      arrowGroup.setPluginData(PLUGIN_DATA_KEY, JSON.stringify({ ...arrowData, options }));
+      newArrow = arrowGroup;
+    } else {
+      newArrow = await drawArrow(source, target, options, arrowGroup);
+    }
 
     figma.currentPage.selection = [newArrow];
     patchArrowIndex(arrowId, newArrow.id, [arrowData.sourceId, arrowData.targetId]);
@@ -1263,15 +1436,25 @@ figma.ui.onmessage = async (msg) => {
   }
 
   if (msg.type === "refresh-all") {
+    const selectedArrows = figma.currentPage.selection.filter(
+      (node): node is GroupNode => node.type === "GROUP" && !!getArrowData(node)
+    );
     const count = await refreshAllArrows({
+      color: msg.color,
       strokeWeight: msg.strokeWeight,
+      lineType: msg.lineType,
       dashed: msg.dashed,
-    });
+      bendPosition: msg.bendPosition,
+    }, selectedArrows);
+    const target = selectedArrows.length > 0 ? "selected" : "all";
     if (count === 0) {
       figma.notify("更新対象の矢印が見つかりません");
+    } else if (target === "selected") {
+      figma.notify(`選択中の${count}本の矢印を更新しました`);
     } else {
       figma.notify(`${count}本の矢印を更新しました`);
     }
+    figma.ui.postMessage({ type: "refresh-complete", target, count });
   }
 
   if (msg.type === "swap-arrow") {
@@ -1331,5 +1514,8 @@ figma.ui.onmessage = async (msg) => {
   } catch (e) {
     console.error("onmessage error:", e);
     figma.notify("エラーが発生しました: " + (e instanceof Error ? e.message : String(e)), { error: true });
+    if (msg.type === "refresh-all") {
+      figma.ui.postMessage({ type: "refresh-failed" });
+    }
   }
 };

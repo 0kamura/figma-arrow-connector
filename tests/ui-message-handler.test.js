@@ -44,6 +44,36 @@ function loadSelectWeightOnFocus() {
   return new Function(`${uiSource.slice(start, end)}\nreturn selectWeightOnFocus;`)();
 }
 
+function loadRequestPointCreation() {
+  const start = uiSource.indexOf('function requestPointCreation(');
+  const end = uiSource.indexOf("\n    document.getElementById('addPointBtn')", start);
+
+  assert.notEqual(start, -1, 'requestPointCreation must exist');
+  assert.notEqual(end, -1, 'requestPointCreation must be registered with the add-point button');
+
+  return new Function(`${uiSource.slice(start, end)}\nreturn requestPointCreation;`)();
+}
+
+function loadRequestSelectedArrowRefresh() {
+  const start = uiSource.indexOf('function requestSelectedArrowRefresh(');
+  const end = uiSource.indexOf("\n    document.getElementById('editRefreshBtn')", start);
+
+  assert.notEqual(start, -1, 'requestSelectedArrowRefresh must exist');
+  assert.notEqual(end, -1, 'requestSelectedArrowRefresh must be registered with the edit refresh button');
+
+  return new Function(`${uiSource.slice(start, end)}\nreturn requestSelectedArrowRefresh;`)();
+}
+
+function loadBuildRefreshStylePatch() {
+  const start = uiSource.indexOf('function buildRefreshStylePatch(');
+  const end = uiSource.indexOf('\n    function updateRefreshButton(', start);
+
+  assert.notEqual(start, -1, 'buildRefreshStylePatch must exist');
+  assert.notEqual(end, -1, 'buildRefreshStylePatch must be defined before refresh button updates');
+
+  return new Function(`${uiSource.slice(start, end)}\nreturn buildRefreshStylePatch;`)();
+}
+
 test('ignores message events without a Figma pluginMessage payload', () => {
   const handler = loadMessageHandlerPrefix();
 
@@ -100,15 +130,77 @@ test('focusing a stroke weight field selects its existing value for replacement'
   assert.match(uiSource, /editStrokeWeight\.addEventListener\('focus', selectWeightOnFocus\)/);
 });
 
-test('refresh sends the current stroke weight and dashed setting', () => {
+test('refresh sends only the style fields marked as changed', () => {
   const refreshHandler = uiSource.slice(
     uiSource.indexOf("document.getElementById('relaunchBtn').addEventListener"),
     uiSource.indexOf('// ---- Persist create-mode changes immediately ----')
   );
 
-  assert.match(refreshHandler, /strokeWeight: readStrokeWeight\(strokeWeight\)/);
-  assert.match(refreshHandler, /dashed: document\.getElementById\('dashed'\)\.checked/);
-  assert.match(refreshHandler, /type: 'refresh-all', \.\.\.lineStyle/);
+  assert.match(refreshHandler, /buildRefreshStylePatch\(refreshDirtyFields,/);
+  assert.match(refreshHandler, /type: 'refresh-all', \.\.\.stylePatch/);
+});
+
+test('refresh style patch includes only fields changed by the user', () => {
+  const buildRefreshStylePatch = loadBuildRefreshStylePatch();
+  const values = {
+    color: '#ff0000',
+    strokeWeight: 4,
+    lineType: 'elbow-z',
+    dashed: true,
+    bendPosition: 0.25,
+  };
+
+  assert.deepEqual(
+    buildRefreshStylePatch(new Set(['color', 'dashed']), values),
+    { color: '#ff0000', dashed: true }
+  );
+  assert.deepEqual(
+    buildRefreshStylePatch(new Set(['bendPosition']), values),
+    { bendPosition: 0.25 }
+  );
+  assert.deepEqual(buildRefreshStylePatch(new Set(), values), {});
+});
+
+test('point creation requests the add-point action from the plugin host', () => {
+  const requestPointCreation = loadRequestPointCreation();
+  const sent = [];
+  const host = {
+    postMessage(payload, origin) {
+      sent.push({ payload, origin });
+    },
+  };
+
+  requestPointCreation(host);
+
+  assert.deepEqual(sent, [{
+    payload: { pluginMessage: { type: 'add-point' } },
+    origin: '*',
+  }]);
+});
+
+test('selected arrow actions keep create disabled and refresh only that arrow', () => {
+  const editMode = uiSource.slice(
+    uiSource.indexOf('<!-- Edit Mode -->'),
+    uiSource.indexOf('<script>')
+  );
+  assert.match(editMode, /id="editCreateBtn"\s+disabled/);
+  assert.match(editMode, /id="editRefreshBtn"/);
+
+  const requestSelectedArrowRefresh = loadRequestSelectedArrowRefresh();
+  const sent = [];
+  const host = {
+    postMessage(payload, origin) {
+      sent.push({ payload, origin });
+    },
+  };
+
+  requestSelectedArrowRefresh('arrow-42', host);
+  requestSelectedArrowRefresh(null, host);
+
+  assert.deepEqual(sent, [{
+    payload: { pluginMessage: { type: 'refresh-position', arrowId: 'arrow-42' } },
+    origin: '*',
+  }]);
 });
 
 test('quick connect only fires after startup for a new pair of exactly two frames', () => {
@@ -142,4 +234,19 @@ test('quick connect toggle is persisted and reuses the normal create action', ()
     uiSource.indexOf('function updateCreateUI()')
   );
   assert.match(editBranch, /lastQuickConnectPairKey = '';/);
+});
+
+test('quick connect help exposes only the custom tooltip', () => {
+  const classIndex = uiSource.indexOf('class="quick-connect-help"');
+  const tagStart = uiSource.lastIndexOf('<button', classIndex);
+  const tagEnd = uiSource.indexOf('>', classIndex);
+
+  assert.notEqual(classIndex, -1, 'quick connect help button must exist');
+  assert.notEqual(tagStart, -1, 'quick connect help must be a button');
+  assert.notEqual(tagEnd, -1, 'quick connect help button tag must close');
+
+  const openingTag = uiSource.slice(tagStart, tagEnd + 1);
+  assert.match(openingTag, /\sdata-tooltip="[^"]+"/);
+  assert.match(openingTag, /\saria-label="[^"]+"/);
+  assert.doesNotMatch(openingTag, /\stitle="/);
 });

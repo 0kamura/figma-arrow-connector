@@ -97,6 +97,49 @@
       color: var(--c-text2);
       line-height: 1;
     }
+    .quick-connect-help {
+      position: relative;
+      width: 14px;
+      height: 14px;
+      border: 1px solid var(--c-border);
+      border-radius: 50%;
+      background: transparent;
+      color: var(--c-text2);
+      font: 500 10px/1 'Inter', sans-serif;
+      cursor: help;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+    }
+    .quick-connect-help::after {
+      content: attr(data-tooltip);
+      position: absolute;
+      top: calc(100% + 8px);
+      right: -48px;
+      width: 232px;
+      padding: 8px 10px;
+      border-radius: 6px;
+      background: var(--c-text);
+      color: var(--c-white);
+      font: 400 11px/1.45 'Inter', 'Noto Sans JP', sans-serif;
+      text-align: left;
+      box-shadow: 0 4px 12px rgba(12,12,13,0.16);
+      opacity: 0;
+      transform: translateY(-2px);
+      pointer-events: none;
+      transition: opacity 0.12s, transform 0.12s;
+      z-index: 1100;
+    }
+    .quick-connect-help:hover::after,
+    .quick-connect-help:focus-visible::after {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    .quick-connect-help:focus-visible {
+      outline: 1px solid var(--c-text2);
+      outline-offset: 2px;
+    }
     .quick-connect-control:focus-within .tslider {
       outline: 1px solid var(--c-text2);
       outline-offset: 2px;
@@ -109,6 +152,36 @@
       gap: 8px;
       align-items: center;
     }
+    .add-point-btn {
+      height: 24px;
+      margin-top: -4px;
+      border: 1px solid var(--c-border);
+      border-radius: 5px;
+      background: transparent;
+      color: var(--c-text2);
+      font: 400 11px/1 'Inter', 'Noto Sans JP', sans-serif;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+    }
+    .add-point-btn:hover {
+      background: var(--c-bg2);
+      color: var(--c-text);
+    }
+    .add-point-btn:focus-visible {
+      outline: 1px solid var(--c-text2);
+      outline-offset: 2px;
+    }
+    .point-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #000;
+      flex: 0 0 auto;
+    }
+    .add-point-separator { color: var(--c-text3); }
     .swap-btn {
       width: 32px;
       height: 32px;
@@ -693,7 +766,7 @@
       font-size: 11px;
       color: var(--c-text3);
       text-align: center;
-      margin-top: -16px;
+      margin-top: -6px;
     }
   </style>
 </head>
@@ -703,21 +776,33 @@
   </button>
 
   <!-- Create Mode -->
-  <div id="createMode" style="display:flex;flex-direction:column;gap:20px">
+  <div id="createMode" style="display:flex;flex-direction:column;gap:10px">
     <div class="section frame-section">
       <div class="section-title">Frame</div>
-      <label class="quick-connect-control" title="Connect automatically when exactly two objects are selected">
-        <span class="quick-connect-label-en" lang="en">Quick Connect</span>
-        <span class="toggle-mini">
+      <div class="quick-connect-control">
+        <label class="quick-connect-label-en" lang="en" for="quickConnect">Quick Connect</label>
+        <button
+          type="button"
+          class="quick-connect-help"
+          aria-label="Quick Connectの使い方"
+          data-tooltip="Shiftを押しながら2つのオブジェクトを選択すると、自動で矢印を作成します"
+        >?</button>
+        <label class="toggle-mini">
           <input type="checkbox" id="quickConnect" aria-label="Quick Connect / クイック接続" />
           <span class="tslider"></span>
-        </span>
-      </label>
+        </label>
+      </div>
       <div class="frame-container">
         <div class="frame-rows" id="frameList">
           <div class="empty-state">Select 2 frames</div>
         </div>
       </div>
+      <button class="add-point-btn" id="addPointBtn">
+        <span class="point-dot" aria-hidden="true"></span>
+        <span lang="en">Add Point</span>
+        <span class="add-point-separator" aria-hidden="true">/</span>
+        <span lang="ja">支点を追加</span>
+      </button>
       <div class="arrow-dir-row">
         <select class="arrow-dir-select" id="arrowDirStart">
           <option value="none" selected>━  None</option>
@@ -839,15 +924,15 @@
         <span class="btn-label-ja" lang="ja">矢印を作成</span>
       </button>
       <button class="btn btn-outline" id="relaunchBtn">
-        <span class="btn-label-en" lang="en">Refresh</span>
-        <span class="btn-label-ja" lang="ja">矢印を更新</span>
+        <span class="btn-label-en" lang="en">Update All</span>
+        <span class="btn-label-ja" lang="ja">全矢印・変更項目のみ</span>
       </button>
     </div>
     <div class="hint" id="hint">Select 2 frames to connect</div>
   </div>
 
   <!-- Edit Mode -->
-  <div id="editMode" style="display:none;flex-direction:column;gap:20px;">
+  <div id="editMode" style="display:none;flex-direction:column;gap:10px;">
     <div class="section">
       <div class="section-title">Frame</div>
       <div class="frame-container">
@@ -968,6 +1053,16 @@
       <input type="text" class="label-input" id="editLabelInput" placeholder="Input Text" />
     </div>
 
+    <div class="btn-stack">
+      <button class="btn btn-primary" id="editCreateBtn" disabled>
+        <span class="btn-label-en" lang="en">Create Arrow</span>
+        <span class="btn-label-ja" lang="ja">矢印を作成</span>
+      </button>
+      <button class="btn btn-outline" id="editRefreshBtn">
+        <span class="btn-label-en" lang="en">Refresh</span>
+        <span class="btn-label-ja" lang="ja">矢印を更新</span>
+      </button>
+    </div>
   </div>
 
   <script>
@@ -1062,6 +1157,8 @@
     let labelDebounceTimer = null;
     let quickConnectArmed = false;
     let lastQuickConnectPairKey = '';
+    let selectedArrowCount = 0;
+    const refreshDirtyFields = new Set();
 
     function cancelPendingEditUpdates() {
       clearTimeout(editDebounceTimer);
@@ -1230,7 +1327,10 @@
             document.getElementById(swatchId).style.background = it.hex;
             panel.classList.remove('open');
             if (isEdit) sendEditUpdate();
-            else if (typeof savePrefs === 'function') savePrefs();
+            else if (typeof savePrefs === 'function') {
+              markRefreshField('color');
+              savePrefs();
+            }
           });
           list.appendChild(el);
         }
@@ -1260,7 +1360,10 @@
             document.getElementById(hid).textContent = it.hex.replace('#','');
             document.getElementById(sid).style.background = it.hex;
             if (idx === 1) sendEditUpdate();
-            else if (typeof savePrefs === 'function') savePrefs();
+            else if (typeof savePrefs === 'function') {
+              markRefreshField('color');
+              savePrefs();
+            }
           });
           grid.appendChild(sw);
         }
@@ -1302,9 +1405,13 @@
         if (!Array.isArray(msg.frames)) return;
         cancelPendingEditUpdates();
         frames = msg.frames;
+        selectedArrowCount = Number.isFinite(msg.selectedArrowCount)
+          ? Math.max(0, Math.floor(msg.selectedArrowCount))
+          : 0;
         currentArrowId = null;
         createMode.style.display = 'flex';
         editMode.style.display = 'none';
+        updateRefreshButton();
         updateCreateUI();
         // 自動計算された接続位置をピッカーに反映
         if (msg.autoStartSide && msg.autoStartSide !== 'auto' && startPicker) {
@@ -1366,6 +1473,11 @@
         editBendInput.value = bp;
         updateSliderBg(editBendPosition);
       }
+
+      if (msg.type === 'refresh-complete') {
+        refreshDirtyFields.clear();
+        updateRefreshButton();
+      }
     };
 
     function updateCreateUI() {
@@ -1405,6 +1517,33 @@
       const value = parseFloat(input.value);
       if (!Number.isFinite(value)) return fallback;
       return Math.round(Math.max(0.5, Math.min(20, value)) * 10) / 10;
+    }
+    function buildRefreshStylePatch(changedFields, values) {
+      const patch = {};
+      for (const field of ['color', 'strokeWeight', 'lineType', 'dashed', 'bendPosition']) {
+        if (changedFields.has(field)) patch[field] = values[field];
+      }
+      return patch;
+    }
+    function updateRefreshButton() {
+      const button = document.getElementById('relaunchBtn');
+      const labelEn = button.querySelector('.btn-label-en');
+      const labelJa = button.querySelector('.btn-label-ja');
+      const changed = [...refreshDirtyFields];
+      if (selectedArrowCount > 0) {
+        labelEn.textContent = `Update Selected (${selectedArrowCount})`;
+        labelJa.textContent = `選択中${selectedArrowCount}本・変更項目のみ`;
+      } else {
+        labelEn.textContent = 'Update All';
+        labelJa.textContent = '全矢印・変更項目のみ';
+      }
+      button.title = changed.length > 0
+        ? `更新項目: ${changed.join(', ')}`
+        : '変更項目なし：位置のみ更新';
+    }
+    function markRefreshField(field) {
+      refreshDirtyFields.add(field);
+      updateRefreshButton();
     }
     function savePrefs() {
       const p = {
@@ -1542,28 +1681,45 @@
       createArrowFromSelection();
     }
 
+    function requestPointCreation(host = parent) {
+      host.postMessage({ pluginMessage: { type: 'add-point' } }, '*');
+    }
+    document.getElementById('addPointBtn').addEventListener('click', () => requestPointCreation());
+    function requestSelectedArrowRefresh(arrowId, host = parent) {
+      if (!arrowId) return;
+      host.postMessage({ pluginMessage: { type: 'refresh-position', arrowId } }, '*');
+    }
+    document.getElementById('editRefreshBtn').addEventListener('click', () => {
+      requestSelectedArrowRefresh(currentArrowId);
+    });
     connectBtn.addEventListener('click', createArrowFromSelection);
     document.getElementById('relaunchBtn').addEventListener('click', () => {
-      const lineStyle = {
+      const values = {
+        color: colorPicker.value,
         strokeWeight: readStrokeWeight(strokeWeight),
+        lineType: lineTypeCreate.getValue(),
         dashed: document.getElementById('dashed').checked,
+        bendPosition: parseInt(bendPosition.value) / 100,
       };
+      const stylePatch = buildRefreshStylePatch(refreshDirtyFields, values);
       savePrefs();
-      parent.postMessage({ pluginMessage: { type: 'refresh-all', ...lineStyle } }, '*');
+      parent.postMessage({ pluginMessage: { type: 'refresh-all', ...stylePatch } }, '*');
     });
 
     // ---- Persist create-mode changes immediately ----
-    colorPicker.addEventListener('input', savePrefs);
-    strokeWeight.addEventListener('input', savePrefs);
+    colorPicker.addEventListener('input', () => { markRefreshField('color'); savePrefs(); });
+    strokeWeight.addEventListener('input', () => { markRefreshField('strokeWeight'); savePrefs(); });
     strokeWeight.addEventListener('blur', savePrefs);
-    document.getElementById('dashed').addEventListener('change', savePrefs);
+    document.getElementById('dashed').addEventListener('change', () => { markRefreshField('dashed'); savePrefs(); });
     document.getElementById('lineType').addEventListener('click', (e) => {
-      if (e.target.closest('.line-type-btn')) setTimeout(savePrefs, 0);
+      if (e.target.closest('.line-type-btn')) {
+        setTimeout(() => { markRefreshField('lineType'); savePrefs(); }, 0);
+      }
     });
     document.getElementById('arrowDirStart').addEventListener('change', savePrefs);
     document.getElementById('arrowDirEnd').addEventListener('change', savePrefs);
-    bendPosition.addEventListener('input', savePrefs);
-    bendInput.addEventListener('change', savePrefs);
+    bendPosition.addEventListener('input', () => { markRefreshField('bendPosition'); savePrefs(); });
+    bendInput.addEventListener('change', () => { markRefreshField('bendPosition'); savePrefs(); });
     document.getElementById('labelFontSize').addEventListener('input', savePrefs);
     document.getElementById('labelFontSize').addEventListener('blur', savePrefs);
     document.getElementById('labelWeight').addEventListener('click', (e) => {
