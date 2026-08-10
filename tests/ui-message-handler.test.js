@@ -22,6 +22,18 @@ function loadMessageHandlerPrefix() {
   );
 }
 
+function loadQuickConnectPolicy() {
+  const startMarker = 'function shouldQuickConnect(';
+  const endMarker = '\n    // ---- State ----';
+  const start = uiSource.indexOf(startMarker);
+  const end = uiSource.indexOf(endMarker, start);
+
+  assert.notEqual(start, -1, 'shouldQuickConnect must exist');
+  assert.notEqual(end, -1, 'shouldQuickConnect section must terminate before state setup');
+
+  return new Function(`${uiSource.slice(start, end)}\nreturn shouldQuickConnect;`)();
+}
+
 test('ignores message events without a Figma pluginMessage payload', () => {
   const handler = loadMessageHandlerPrefix();
 
@@ -65,4 +77,37 @@ test('create and edit options use a finite validated stroke weight', () => {
   assert.match(uiSource, /function readStrokeWeight\(input, fallback = 2\)/);
   assert.match(uiSource, /strokeWeight: readStrokeWeight\(strokeWeight\)/);
   assert.match(uiSource, /strokeWeight: readStrokeWeight\(editStrokeWeight\)/);
+});
+
+test('quick connect only fires after startup for a new pair of exactly two frames', () => {
+  const shouldQuickConnect = loadQuickConnectPolicy();
+  const pair = ['frame-a', 'frame-b'];
+
+  assert.equal(shouldQuickConnect({ enabled: true, armed: false, frameIds: pair, lastPairKey: '' }), false);
+  assert.equal(shouldQuickConnect({ enabled: false, armed: true, frameIds: pair, lastPairKey: '' }), false);
+  assert.equal(shouldQuickConnect({ enabled: true, armed: true, frameIds: ['frame-a'], lastPairKey: '' }), false);
+  assert.equal(shouldQuickConnect({ enabled: true, armed: true, frameIds: [...pair, 'frame-c'], lastPairKey: '' }), false);
+  assert.equal(shouldQuickConnect({ enabled: true, armed: true, frameIds: pair, lastPairKey: '' }), true);
+  assert.equal(shouldQuickConnect({ enabled: true, armed: true, frameIds: pair, lastPairKey: pair.join('::') }), false);
+});
+
+test('quick connect toggle is persisted and reuses the normal create action', () => {
+  assert.match(uiSource, /id="quickConnect"/);
+  assert.match(uiSource, /Quick Connect/);
+  assert.match(uiSource, /quickConnect: document\.getElementById\('quickConnect'\)\.checked/);
+  assert.match(uiSource, /typeof p\.quickConnect === 'boolean'/);
+  assert.match(uiSource, /function createArrowFromSelection\(\)/);
+  assert.match(uiSource, /function maybeQuickConnect\(\)/);
+
+  const selectionBranch = uiSource.slice(
+    uiSource.indexOf("if (msg.type === 'selection-update')"),
+    uiSource.indexOf("if (msg.type === 'edit-arrow')")
+  );
+  assert.match(selectionBranch, /maybeQuickConnect\(\);/);
+
+  const editBranch = uiSource.slice(
+    uiSource.indexOf("if (msg.type === 'edit-arrow')"),
+    uiSource.indexOf('function updateCreateUI()')
+  );
+  assert.match(editBranch, /lastQuickConnectPairKey = '';/);
 });

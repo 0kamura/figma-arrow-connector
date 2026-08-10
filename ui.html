@@ -79,6 +79,28 @@
     }
 
     /* ---- Frame ---- */
+    .frame-section {
+      position: relative;
+    }
+    .quick-connect-control {
+      position: absolute;
+      top: 1px;
+      right: 36px;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      margin: 0 !important;
+      cursor: pointer;
+    }
+    .quick-connect-label-en {
+      font-size: 10px;
+      color: var(--c-text2);
+      line-height: 1;
+    }
+    .quick-connect-control:focus-within .tslider {
+      outline: 1px solid var(--c-text2);
+      outline-offset: 2px;
+    }
     .frame-container {
       background: var(--c-bg2);
       border-radius: 4px;
@@ -682,8 +704,15 @@
 
   <!-- Create Mode -->
   <div id="createMode" style="display:flex;flex-direction:column;gap:20px">
-    <div class="section">
+    <div class="section frame-section">
       <div class="section-title">Frame</div>
+      <label class="quick-connect-control" title="Connect automatically when exactly two objects are selected">
+        <span class="quick-connect-label-en" lang="en">Quick Connect</span>
+        <span class="toggle-mini">
+          <input type="checkbox" id="quickConnect" aria-label="Quick Connect / クイック接続" />
+          <span class="tslider"></span>
+        </span>
+      </label>
       <div class="frame-container">
         <div class="frame-rows" id="frameList">
           <div class="empty-state">Select 2 frames</div>
@@ -1019,6 +1048,11 @@
       if (localStorage.getItem(MINIMIZE_KEY) === '1') applyMinimized(true);
     } catch {}
 
+    function shouldQuickConnect({ enabled, armed, frameIds, lastPairKey }) {
+      if (!enabled || !armed || frameIds.length !== 2) return false;
+      return frameIds.join('::') !== lastPairKey;
+    }
+
     // ---- State ----
     let frames = [];
     let currentArrowId = null;
@@ -1026,6 +1060,8 @@
     let editStartPicker = null, editEndPicker = null;
     let editDebounceTimer = null;
     let labelDebounceTimer = null;
+    let quickConnectArmed = false;
+    let lastQuickConnectPairKey = '';
 
     function cancelPendingEditUpdates() {
       clearTimeout(editDebounceTimer);
@@ -1277,12 +1313,14 @@
         if (msg.autoEndSide && msg.autoEndSide !== 'auto' && endPicker) {
           endPicker.setValue(msg.autoEndSide);
         }
+        maybeQuickConnect();
       }
 
       if (msg.type === 'edit-arrow') {
         if (typeof msg.arrowId !== 'string' || !msg.options || typeof msg.options !== 'object') return;
         if (typeof msg.options.color !== 'string') return;
         cancelPendingEditUpdates();
+        lastQuickConnectPairKey = '';
         currentArrowId = msg.arrowId;
         createMode.style.display = 'none';
         editMode.style.display = 'flex';
@@ -1379,6 +1417,7 @@
         bendPosition: parseInt(bendPosition.value),
         labelFontSize: parseFloat(document.getElementById('labelFontSize').value),
         labelBold: labelWeightCreate.getValue() === 'bold',
+        quickConnect: document.getElementById('quickConnect').checked,
       };
       try { localStorage.setItem(STORAGE_KEY, JSON.stringify(p)); } catch {}
     }
@@ -1397,6 +1436,7 @@
         if (p.bendPosition) { bendPosition.value = p.bendPosition; bendInput.value = p.bendPosition; updateSliderBg(bendPosition); }
         if (p.labelFontSize) document.getElementById('labelFontSize').value = p.labelFontSize;
         if (typeof p.labelBold === 'boolean') labelWeightCreate.setValue(p.labelBold ? 'bold' : 'regular');
+        if (typeof p.quickConnect === 'boolean') document.getElementById('quickConnect').checked = p.quickConnect;
       } catch {}
     }
     loadPrefs();
@@ -1469,11 +1509,40 @@
     });
 
     // ---- Actions ----
-    connectBtn.addEventListener('click', () => {
+    function createArrowFromSelection() {
       if (frames.length < 2) return;
       const o = getCreateOpts();
       parent.postMessage({ pluginMessage: { type: 'connect', sourceId: frames[0].id, targetId: frames[1].id, ...o } }, '*');
-    });
+    }
+
+    function maybeQuickConnect() {
+      const frameIds = frames.map(frame => frame.id);
+      const pairKey = frameIds.length === 2 ? frameIds.join('::') : '';
+
+      // 起動時の選択は観測だけに留め、次の選択変更から有効にする。
+      if (!quickConnectArmed) {
+        quickConnectArmed = true;
+        lastQuickConnectPairKey = pairKey;
+        return;
+      }
+
+      if (frameIds.length !== 2) {
+        lastQuickConnectPairKey = '';
+        return;
+      }
+
+      if (!shouldQuickConnect({
+        enabled: document.getElementById('quickConnect').checked,
+        armed: quickConnectArmed,
+        frameIds,
+        lastPairKey: lastQuickConnectPairKey,
+      })) return;
+
+      lastQuickConnectPairKey = pairKey;
+      createArrowFromSelection();
+    }
+
+    connectBtn.addEventListener('click', createArrowFromSelection);
     document.getElementById('relaunchBtn').addEventListener('click', () => {
       parent.postMessage({ pluginMessage: { type: 'refresh-all' } }, '*');
     });
@@ -1494,6 +1563,10 @@
     document.getElementById('labelFontSize').addEventListener('blur', savePrefs);
     document.getElementById('labelWeight').addEventListener('click', (e) => {
       if (e.target.closest('.text-toggle-btn')) setTimeout(savePrefs, 0);
+    });
+    document.getElementById('quickConnect').addEventListener('change', () => {
+      lastQuickConnectPairKey = frames.length === 2 ? frames.map(frame => frame.id).join('::') : '';
+      savePrefs();
     });
 
     // Final save on window teardown (plugin close)
