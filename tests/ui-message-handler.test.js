@@ -74,6 +74,28 @@ function loadBuildRefreshStylePatch() {
   return new Function(`${uiSource.slice(start, end)}\nreturn buildRefreshStylePatch;`)();
 }
 
+function loadStrokePreferenceHelpers() {
+  const start = uiSource.indexOf('const PREFS_VERSION =');
+  const end = uiSource.indexOf('\n    function buildRefreshStylePatch(', start);
+
+  assert.notEqual(start, -1, 'stroke preference constants must exist');
+  assert.notEqual(end, -1, 'stroke preference helpers must be defined before refresh patching');
+
+  return new Function(
+    `${uiSource.slice(start, end)}\nreturn { readStrokeWeight, stepStrokeWeight, resolveDefaultPreference, resolveStrokePreference: typeof resolveStrokePreference === 'function' ? resolveStrokePreference : undefined };`
+  )();
+}
+
+function loadCreateLabelInputPolicy() {
+  const start = uiSource.indexOf('function shouldDisableCreateLabelInput(');
+  const end = uiSource.indexOf('\n    function updateCreateUI()', start);
+
+  assert.notEqual(start, -1, 'create label input policy must exist');
+  assert.notEqual(end, -1, 'create label input policy must be defined before create UI updates');
+
+  return new Function(`${uiSource.slice(start, end)}\nreturn shouldDisableCreateLabelInput;`)();
+}
+
 test('ignores message events without a Figma pluginMessage payload', () => {
   const handler = loadMessageHandlerPrefix();
 
@@ -114,9 +136,111 @@ test('debounced edits keep their original arrow id and are cancelled on selectio
 });
 
 test('create and edit options use a finite validated stroke weight', () => {
-  assert.match(uiSource, /function readStrokeWeight\(input, fallback = 2\)/);
+  assert.match(uiSource, /function readStrokeWeight\(input, fallback = DEFAULT_STROKE_WEIGHT\)/);
   assert.match(uiSource, /strokeWeight: readStrokeWeight\(strokeWeight\)/);
   assert.match(uiSource, /strokeWeight: readStrokeWeight\(editStrokeWeight\)/);
+});
+
+test('disables the create label input until two frames can be connected', () => {
+  const shouldDisableCreateLabelInput = loadCreateLabelInputPolicy();
+
+  assert.equal(shouldDisableCreateLabelInput(0), true);
+  assert.equal(shouldDisableCreateLabelInput(1), true);
+  assert.equal(shouldDisableCreateLabelInput(2), false);
+  assert.equal(shouldDisableCreateLabelInput(3), false);
+
+  const createLabelTag = uiSource.match(/<input[^>]*id="labelInput"[^>]*>/)?.[0] || '';
+  const editLabelTag = uiSource.match(/<input[^>]*id="editLabelInput"[^>]*>/)?.[0] || '';
+  assert.match(createLabelTag, /\sdisabled(?:\s|>)/);
+  assert.doesNotMatch(editLabelTag, /\sdisabled(?:\s|>)/);
+  assert.match(uiSource, /const createDisabled = shouldDisableCreateLabelInput\(frames\.length\);/);
+  assert.match(uiSource, /connectBtn\.disabled = createDisabled;\s*labelInput\.disabled = createDisabled;/);
+});
+
+test('shows a light gray fill on a disabled label input', () => {
+  const disabledStyle = uiSource.slice(
+    uiSource.indexOf('.label-input:disabled {'),
+    uiSource.indexOf('\n    }', uiSource.indexOf('.label-input:disabled {')) + 6
+  );
+
+  assert.match(disabledStyle, /background:\s*var\(--c-bg2\);/);
+});
+
+test('stroke weight defaults to 2 and changes in half-point increments', () => {
+  const { readStrokeWeight, stepStrokeWeight } = loadStrokePreferenceHelpers();
+
+  assert.equal(readStrokeWeight({ value: '' }), 2);
+  assert.equal(readStrokeWeight({ value: '4.2' }), 4);
+  assert.equal(readStrokeWeight({ value: '4.3' }), 4.5);
+  assert.equal(stepStrokeWeight('4', 'up'), 4.5);
+  assert.equal(stepStrokeWeight('4.5', 'down'), 4);
+  assert.equal(stepStrokeWeight('20', 'up'), 20);
+  assert.equal(stepStrokeWeight('0.5', 'down'), 0.5);
+  assert.match(uiSource, /id="strokeWeight"[^>]*value="2"/);
+  assert.match(uiSource, /id="editStrokeWeight"[^>]*value="2"/);
+});
+
+test('migrates legacy default weight 4 to 2 without overwriting a current user value', () => {
+  const { resolveStrokePreference } = loadStrokePreferenceHelpers();
+
+  assert.equal(typeof resolveStrokePreference, 'function');
+  assert.equal(resolveStrokePreference(4, 2), 2);
+  assert.equal(resolveStrokePreference(4, undefined), 2);
+  assert.equal(resolveStrokePreference(4, 3), 4);
+  assert.equal(resolveStrokePreference(5, 2), 5);
+  assert.equal(resolveStrokePreference(undefined, 2), 2);
+});
+
+test('migrates only the legacy label default to 16', () => {
+  const { resolveDefaultPreference } = loadStrokePreferenceHelpers();
+
+  assert.equal(resolveDefaultPreference(14, 14, 16, undefined), 16);
+  assert.equal(resolveDefaultPreference(18, 14, 16, undefined), 18);
+  assert.equal(resolveDefaultPreference(undefined, 14, 16, 2), 16);
+});
+
+test('uses balanced swatch margins and 16px spacing between main sections', () => {
+  const swatchGridStyle = uiSource.slice(
+    uiSource.indexOf('.swatch-grid-container {'),
+    uiSource.indexOf('\n    }', uiSource.indexOf('.swatch-grid-container {')) + 6
+  );
+
+  assert.match(swatchGridStyle, /padding:\s*6px 8px 7px;/);
+  assert.match(swatchGridStyle, /grid-template-columns:\s*repeat\(12, 14px\);/);
+  assert.match(swatchGridStyle, /justify-content:\s*space-between;/);
+  assert.match(uiSource, /id="createMode" style="display:flex;flex-direction:column;gap:16px"/);
+  assert.match(uiSource, /id="editMode" style="display:none;flex-direction:column;gap:16px;"/);
+});
+
+test('keeps the expanded layout scroll-free at its polished height', () => {
+  const bodyStyle = uiSource.slice(
+    uiSource.indexOf('body {'),
+    uiSource.indexOf('\n    }', uiSource.indexOf('body {')) + 6
+  );
+
+  assert.match(bodyStyle, /overflow:\s*hidden;/);
+  assert.match(uiSource, /const EXPANDED_SIZE = \{ w: 340, h: 584 \};/);
+});
+
+test('aligns section headings, controls, and bottom actions to the same inset', () => {
+  const sectionTitleStyle = uiSource.slice(
+    uiSource.indexOf('.section-title {'),
+    uiSource.indexOf('\n    }', uiSource.indexOf('.section-title {')) + 6
+  );
+  const buttonStackStyle = uiSource.slice(
+    uiSource.indexOf('.btn-stack {'),
+    uiSource.indexOf('\n    }', uiSource.indexOf('.btn-stack {')) + 6
+  );
+  const strokeTopStyle = uiSource.slice(
+    uiSource.indexOf('.stroke-top {'),
+    uiSource.indexOf('\n    }', uiSource.indexOf('.stroke-top {')) + 6
+  );
+
+  assert.match(sectionTitleStyle, /margin:\s*0 8px;/);
+  assert.match(buttonStackStyle, /margin:\s*0 8px;/);
+  assert.match(strokeTopStyle, /justify-content:\s*space-between;/);
+  assert.match(strokeTopStyle, /gap:\s*0;/);
+  assert.match(uiSource, /\.btn-label-ja\s*\{[^}]*font-size:\s*9px;/s);
 });
 
 test('focusing a stroke weight field selects its existing value for replacement', () => {
@@ -176,6 +300,30 @@ test('point creation requests the add-point action from the plugin host', () => 
     payload: { pluginMessage: { type: 'add-point' } },
     origin: '*',
   }]);
+});
+
+test('keeps the frame area height stable when the selection changes', () => {
+  const frameRowsStyle = uiSource.slice(
+    uiSource.indexOf('.frame-rows {'),
+    uiSource.indexOf('\n    }', uiSource.indexOf('.frame-rows {')) + 6
+  );
+
+  assert.match(frameRowsStyle, /(?:^|\n)\s*height:\s*80px;/);
+});
+
+test('keeps add point visible but disabled while editing an arrow', () => {
+  const editMode = uiSource.slice(
+    uiSource.indexOf('<!-- Edit Mode -->'),
+    uiSource.indexOf('<script>')
+  );
+
+  assert.match(editMode, /class="add-point-btn" id="editAddPointBtn" disabled/);
+  assert.match(uiSource, /\.add-point-btn:disabled\s*\{[^}]*opacity:/s);
+});
+
+test('does not duplicate frame selection guidance below the action buttons', () => {
+  assert.doesNotMatch(uiSource, /id="hint"/);
+  assert.doesNotMatch(uiSource, /hint\.textContent/);
 });
 
 test('selected arrow actions keep create disabled and refresh only that arrow', () => {

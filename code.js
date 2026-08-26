@@ -5,7 +5,7 @@ const isRelaunch = figma.command === "refresh-all";
 // 大きいファイルで大幅に速くなる（Figma公式推奨）。本プラグインは非表示インスタンス内部を
 // 扱わないため機能面の影響はない
 figma.skipInvisibleInstanceChildren = true;
-figma.showUI(__html__, { width: 340, height: 560, themeColors: true, visible: !isRelaunch });
+figma.showUI(__html__, { width: 340, height: 584, themeColors: true, visible: !isRelaunch });
 const PLUGIN_DATA_KEY = "arrow-connector-data";
 // ノードの絶対座標バウンディングボックスを取得
 function getAbsBounds(node) {
@@ -228,7 +228,7 @@ function rgbToHex(color) {
         .padStart(2, "0");
     return `#${toHex(color.r)}${toHex(color.g)}${toHex(color.b)}`;
 }
-// 折れ線パスの中間点を求める
+// 折れ線パスの中間点と、その位置での線の向きを求める
 function getPathMidpoint(points) {
     // 全セグメントの長さを計算
     let totalLength = 0;
@@ -241,17 +241,32 @@ function getPathMidpoint(points) {
     // 中間地点を探す
     let remaining = totalLength / 2;
     for (let i = 0; i < segLengths.length; i++) {
-        if (remaining <= segLengths[i]) {
+        if (segLengths[i] > 0 && remaining <= segLengths[i]) {
             const t = remaining / segLengths[i];
             return {
-                x: points[i].x + (points[i + 1].x - points[i].x) * t,
-                y: points[i].y + (points[i + 1].y - points[i].y) * t,
+                point: {
+                    x: points[i].x + (points[i + 1].x - points[i].x) * t,
+                    y: points[i].y + (points[i + 1].y - points[i].y) * t,
+                },
+                angle: Math.atan2(points[i + 1].y - points[i].y, points[i + 1].x - points[i].x),
             };
         }
         remaining -= segLengths[i];
     }
     // fallback
-    return points[Math.floor(points.length / 2)];
+    const index = Math.floor(points.length / 2);
+    const point = points[index];
+    const previous = points[Math.max(0, index - 1)];
+    const next = points[Math.min(points.length - 1, index + 1)];
+    return {
+        point,
+        angle: Math.atan2(next.y - previous.y, next.x - previous.x),
+    };
+}
+// 線の進行方向へ投影したラベル寸法に、4pxの余白を加える
+function calculateLabelHalfGap(width, height, angle) {
+    const projectedLength = Math.abs(Math.cos(angle)) * width + Math.abs(Math.sin(angle)) * height;
+    return projectedLength / 2 + 4;
 }
 // ベジェ曲線をt値で分割（De Casteljau）
 function splitBezier(p0, p1, p2, p3, t) {
@@ -369,6 +384,9 @@ async function createLabel(pos, text, color, fontSize, bold) {
     label.fills = [{ type: "SOLID", color }];
     label.textAlignHorizontal = "CENTER";
     label.textAlignVertical = "CENTER";
+    // 日本語などのフォールバックフォントは文字設定後に寸法が確定することがある。
+    // 1タスク待ってから中央配置し、呼び出し側のギャップ計算にも確定寸法を渡す。
+    await new Promise(resolve => setTimeout(resolve, 0));
     label.x = pos.x - label.width / 2;
     label.y = pos.y - label.height / 2;
     return label;
@@ -463,7 +481,7 @@ async function drawArrow(nodeA, nodeB, options, existingGroup) {
         if (options.label) {
             const mid = bezierPointAndTangent(p0, p1, p2, p3, 0.5);
             const labelNode = await createLabel(mid.point, options.label, color, options.labelFontSize, options.labelBold);
-            const halfGap = Math.max(labelNode.width, labelNode.height) / 2 + 6;
+            const halfGap = calculateLabelHalfGap(labelNode.width, labelNode.height, mid.angle);
             const t1 = findBezierT(p0, p1, p2, p3, 0.5, halfGap, -1);
             const t2 = findBezierT(p0, p1, p2, p3, 0.5, halfGap, 1);
             const seg1 = splitBezier(p0, p1, p2, p3, t1).first;
@@ -480,10 +498,10 @@ async function drawArrow(nodeA, nodeB, options, existingGroup) {
         // --- 直線 ---
         const allPoints = [start.point, end.point];
         if (options.label) {
-            const midPt = getPathMidpoint(allPoints);
-            const labelNode = await createLabel(midPt, options.label, color, options.labelFontSize, options.labelBold);
-            const halfGap = Math.max(labelNode.width, labelNode.height) / 2 + 6;
-            const { before, after } = splitPolylineAtGap(allPoints, midPt, halfGap);
+            const mid = getPathMidpoint(allPoints);
+            const labelNode = await createLabel(mid.point, options.label, color, options.labelFontSize, options.labelBold);
+            const halfGap = calculateLabelHalfGap(labelNode.width, labelNode.height, mid.angle);
+            const { before, after } = splitPolylineAtGap(allPoints, mid.point, halfGap);
             if (before.length >= 2) {
                 children.push(await createPolyVector(before, startCap, "NONE"));
             }
@@ -501,10 +519,10 @@ async function drawArrow(nodeA, nodeB, options, existingGroup) {
         const waypoints = calcElbowPoints(start, end, (_a = options.bendPosition) !== null && _a !== void 0 ? _a : 0.5, elbowStyle);
         const allPoints = [start.point, ...waypoints, end.point];
         if (options.label) {
-            const midPt = getPathMidpoint(allPoints);
-            const labelNode = await createLabel(midPt, options.label, color, options.labelFontSize, options.labelBold);
-            const halfGap = Math.max(labelNode.width, labelNode.height) / 2 + 6;
-            const { before, after } = splitPolylineAtGap(allPoints, midPt, halfGap);
+            const mid = getPathMidpoint(allPoints);
+            const labelNode = await createLabel(mid.point, options.label, color, options.labelFontSize, options.labelBold);
+            const halfGap = calculateLabelHalfGap(labelNode.width, labelNode.height, mid.angle);
+            const { before, after } = splitPolylineAtGap(allPoints, mid.point, halfGap);
             if (before.length >= 2) {
                 children.push(await createPolyVector(before, startCap, "NONE"));
             }
@@ -558,7 +576,7 @@ async function drawArrow(nodeA, nodeB, options, existingGroup) {
 // 保存済みデータに後から追加されたオプションの既定値を補う
 function normalizeArrowOptions(options) {
     var _a, _b;
-    return Object.assign(Object.assign({}, options), { labelFontSize: (_a = options.labelFontSize) !== null && _a !== void 0 ? _a : 14, labelBold: (_b = options.labelBold) !== null && _b !== void 0 ? _b : false });
+    return Object.assign(Object.assign({}, options), { labelFontSize: (_a = options.labelFontSize) !== null && _a !== void 0 ? _a : 16, labelBold: (_b = options.labelBold) !== null && _b !== void 0 ? _b : false });
 }
 // Refreshでは現在のUIで指定された線幅・破線だけを上書きし、経路やラベル等は保持する
 function applyRefreshLineStyle(options, style) {
@@ -1127,7 +1145,7 @@ figma.ui.onmessage = async (msg) => {
                 figma.notify("選択したフレームが見つかりません", { error: true });
                 return;
             }
-            const options = { color, strokeWeight, lineType: msg.lineType || (curved ? 'curve' : 'elbow'), curved, dashed, startSide: startSide || "auto", endSide: endSide || "auto", label: label || "", labelFontSize: (_a = msg.labelFontSize) !== null && _a !== void 0 ? _a : 14, labelBold: (_b = msg.labelBold) !== null && _b !== void 0 ? _b : false, startArrow: (_c = msg.startArrow) !== null && _c !== void 0 ? _c : 'none', endArrow: (_d = msg.endArrow) !== null && _d !== void 0 ? _d : 'arrow', bendPosition: (_e = msg.bendPosition) !== null && _e !== void 0 ? _e : 0.5 };
+            const options = { color, strokeWeight, lineType: msg.lineType || (curved ? 'curve' : 'elbow'), curved, dashed, startSide: startSide || "auto", endSide: endSide || "auto", label: label || "", labelFontSize: (_a = msg.labelFontSize) !== null && _a !== void 0 ? _a : 16, labelBold: (_b = msg.labelBold) !== null && _b !== void 0 ? _b : false, startArrow: (_c = msg.startArrow) !== null && _c !== void 0 ? _c : 'none', endArrow: (_d = msg.endArrow) !== null && _d !== void 0 ? _d : 'arrow', bendPosition: (_e = msg.bendPosition) !== null && _e !== void 0 ? _e : 0.5 };
             // 既に同じペアの矢印があれば再描画して更新（重複生成を防ぐ）。ページ全体スキャンではなく
             // メモリ上のarrowIndexから探す
             const existingId = findExistingArrowIdViaIndex(sourceId, targetId);
@@ -1157,7 +1175,7 @@ figma.ui.onmessage = async (msg) => {
                 figma.notify("接続先のフレームが削除されています", { error: true });
                 return;
             }
-            const options = { color, strokeWeight, lineType: msg.lineType || (curved ? 'curve' : 'elbow'), curved, dashed, startSide: startSide || "auto", endSide: endSide || "auto", label: label || "", labelFontSize: (_g = msg.labelFontSize) !== null && _g !== void 0 ? _g : 14, labelBold: (_h = msg.labelBold) !== null && _h !== void 0 ? _h : false, startArrow: (_j = msg.startArrow) !== null && _j !== void 0 ? _j : 'none', endArrow: (_k = msg.endArrow) !== null && _k !== void 0 ? _k : 'arrow', bendPosition: (_l = msg.bendPosition) !== null && _l !== void 0 ? _l : 0.5 };
+            const options = { color, strokeWeight, lineType: msg.lineType || (curved ? 'curve' : 'elbow'), curved, dashed, startSide: startSide || "auto", endSide: endSide || "auto", label: label || "", labelFontSize: (_g = msg.labelFontSize) !== null && _g !== void 0 ? _g : 16, labelBold: (_h = msg.labelBold) !== null && _h !== void 0 ? _h : false, startArrow: (_j = msg.startArrow) !== null && _j !== void 0 ? _j : 'none', endArrow: (_k = msg.endArrow) !== null && _k !== void 0 ? _k : 'arrow', bendPosition: (_l = msg.bendPosition) !== null && _l !== void 0 ? _l : 0.5 };
             const stylePatch = buildInPlaceStylePatch(arrowData.options, options);
             let newArrow;
             if (stylePatch && applyRefreshStyleInPlace(arrowGroup, options, stylePatch)) {
@@ -1171,9 +1189,7 @@ figma.ui.onmessage = async (msg) => {
             patchArrowIndex(arrowId, newArrow.id, [arrowData.sourceId, arrowData.targetId]);
             figma.notify("矢印を更新しました");
         }
-        // Label入力中の軽量更新: ラベルが「有→有」の間はテキストノードの文字だけ差し替え、
-        // 矢印本体（ベクター・グループ）は作り直さない。空⇔非空の切り替わりだけは
-        // ラベル用のギャップ分割・テキストノードの新規作成/削除が要るためフル再描画する。
+        // Label入力はデバウンス後に再描画し、変化した文字幅へ線のギャップを追従させる。
         if (msg.type === "update-arrow-label") {
             const { arrowId, label } = msg;
             const newLabel = label || "";
@@ -1184,20 +1200,8 @@ figma.ui.onmessage = async (msg) => {
             if (!arrowData)
                 return;
             const oldLabel = arrowData.options.label || "";
-            const labelNode = arrowGroup.children.find(n => n.type === "TEXT");
-            if (!!oldLabel === !!newLabel && labelNode) {
-                // テキストだけ差し替え（中心位置を保ったままリサイズ）
-                const cx = labelNode.x + labelNode.width / 2;
-                const cy = labelNode.y + labelNode.height / 2;
-                await figma.loadFontAsync(labelNode.fontName);
-                labelNode.characters = newLabel;
-                labelNode.x = cx - labelNode.width / 2;
-                labelNode.y = cy - labelNode.height / 2;
-                arrowData.options.label = newLabel;
-                arrowGroup.setPluginData(PLUGIN_DATA_KEY, JSON.stringify(arrowData));
+            if (oldLabel === newLabel)
                 return;
-            }
-            // 空⇔非空の切り替わり: 構造が変わるのでフル再描画にフォールバック
             const source = await figma.getNodeByIdAsync(arrowData.sourceId);
             const target = await figma.getNodeByIdAsync(arrowData.targetId);
             if (!source || !target)
@@ -1270,7 +1274,7 @@ figma.ui.onmessage = async (msg) => {
                 figma.notify("接続先のフレームが削除されています", { error: true });
                 return;
             }
-            const options = { color, strokeWeight, lineType: msg.lineType || (curved ? 'curve' : 'elbow'), curved, dashed, startSide: startSide || "auto", endSide: endSide || "auto", label: label || "", labelFontSize: (_m = msg.labelFontSize) !== null && _m !== void 0 ? _m : 14, labelBold: (_o = msg.labelBold) !== null && _o !== void 0 ? _o : false, startArrow: (_p = msg.startArrow) !== null && _p !== void 0 ? _p : 'none', endArrow: (_q = msg.endArrow) !== null && _q !== void 0 ? _q : 'arrow', bendPosition: (_r = msg.bendPosition) !== null && _r !== void 0 ? _r : 0.5 };
+            const options = { color, strokeWeight, lineType: msg.lineType || (curved ? 'curve' : 'elbow'), curved, dashed, startSide: startSide || "auto", endSide: endSide || "auto", label: label || "", labelFontSize: (_m = msg.labelFontSize) !== null && _m !== void 0 ? _m : 16, labelBold: (_o = msg.labelBold) !== null && _o !== void 0 ? _o : false, startArrow: (_p = msg.startArrow) !== null && _p !== void 0 ? _p : 'none', endArrow: (_q = msg.endArrow) !== null && _q !== void 0 ? _q : 'arrow', bendPosition: (_r = msg.bendPosition) !== null && _r !== void 0 ? _r : 0.5 };
             const newArrow = await drawArrow(source, target, options, arrowGroup);
             figma.currentPage.selection = [newArrow];
             patchArrowIndex(arrowId, newArrow.id, [arrowData.sourceId, arrowData.targetId]);
@@ -1290,7 +1294,7 @@ figma.ui.onmessage = async (msg) => {
         }
         if (msg.type === "resize") {
             const w = Math.max(200, Math.min(800, Number(msg.width) || 340));
-            const h = Math.max(80, Math.min(800, Number(msg.height) || 560));
+            const h = Math.max(80, Math.min(800, Number(msg.height) || 584));
             figma.ui.resize(w, h);
         }
         if (msg.type === "cancel") {

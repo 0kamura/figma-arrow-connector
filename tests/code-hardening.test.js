@@ -7,9 +7,13 @@ const ts = require('typescript');
 const codePath = path.join(__dirname, '..', 'code.ts');
 const codeSource = fs.readFileSync(codePath, 'utf8');
 
+test('opens the expanded plugin at the height required by the polished layout', () => {
+  assert.match(codeSource, /figma\.showUI\(__html__, \{ width: 340, height: 584,/);
+});
+
 test('normalizes legacy label options when reading arrow plugin data', () => {
   assert.match(codeSource, /function normalizeArrowOptions\(/);
-  assert.match(codeSource, /labelFontSize: options\.labelFontSize \?\? 14/);
+  assert.match(codeSource, /labelFontSize: options\.labelFontSize \?\? 16/);
   assert.match(codeSource, /labelBold: options\.labelBold \?\? false/);
 
   const getArrowData = codeSource.slice(
@@ -17,6 +21,100 @@ test('normalizes legacy label options when reading arrow plugin data', () => {
     codeSource.indexOf('// 接続可能なノードか')
   );
   assert.match(getArrowData, /options: normalizeArrowOptions\(parsed\.options\)/);
+});
+
+test('sizes the label gap along the connector direction', () => {
+  const start = codeSource.indexOf('function getPathMidpoint(');
+  const end = codeSource.indexOf('\n// ベジェ曲線をt値で分割', start);
+
+  assert.notEqual(start, -1, 'path midpoint calculation must exist');
+  assert.notEqual(end, -1, 'label gap helpers must be defined before bezier splitting');
+
+  const compiled = ts.transpileModule(codeSource.slice(start, end), {
+    compilerOptions: {
+      target: ts.ScriptTarget.ES2017,
+      module: ts.ModuleKind.None,
+    },
+  }).outputText;
+  const helpers = new Function(
+    'distance',
+    `${compiled}\nreturn { getPathMidpoint, calculateLabelHalfGap: typeof calculateLabelHalfGap === 'function' ? calculateLabelHalfGap : undefined };`
+  )((a, b) => Math.hypot(a.x - b.x, a.y - b.y));
+
+  assert.equal(typeof helpers.calculateLabelHalfGap, 'function');
+  const horizontal = helpers.getPathMidpoint([{ x: 0, y: 0 }, { x: 200, y: 0 }]);
+  const vertical = helpers.getPathMidpoint([{ x: 0, y: 0 }, { x: 0, y: 200 }]);
+
+  assert.deepEqual(horizontal.point, { x: 100, y: 0 });
+  assert.equal(horizontal.angle, 0);
+  assert.deepEqual(vertical.point, { x: 0, y: 100 });
+  assert.equal(vertical.angle, Math.PI / 2);
+  assert.equal(helpers.calculateLabelHalfGap(120, 20, horizontal.angle), 64);
+  assert.ok(Math.abs(helpers.calculateLabelHalfGap(120, 20, vertical.angle) - 14) < 1e-9);
+});
+
+test('waits for fallback text metrics before centering a label', async () => {
+  const start = codeSource.indexOf('async function createLabel(');
+  const end = codeSource.indexOf('\n// 矢印を描画', start);
+
+  assert.notEqual(start, -1, 'label creation must exist');
+  assert.notEqual(end, -1, 'label creation must end before arrow drawing');
+
+  const compiled = ts.transpileModule(codeSource.slice(start, end), {
+    compilerOptions: {
+      target: ts.ScriptTarget.ES2017,
+      module: ts.ModuleKind.None,
+    },
+  }).outputText;
+  const createLabel = new Function('figma', `${compiled}\nreturn createLabel;`)({
+    async loadFontAsync() {},
+    createText() {
+      let characters = '';
+      const label = {
+        width: 0,
+        height: 0,
+        x: 0,
+        y: 0,
+        set characters(value) {
+          characters = value;
+          setTimeout(() => {
+            label.width = 48;
+            label.height = 20;
+          }, 0);
+        },
+        get characters() {
+          return characters;
+        },
+      };
+      return label;
+    },
+  });
+
+  const label = await createLabel(
+    { x: 100, y: 50 },
+    'テスト',
+    { r: 0, g: 0, b: 0 },
+    16,
+    false
+  );
+
+  assert.equal(label.width, 48);
+  assert.equal(label.height, 20);
+  assert.equal(label.x, 76);
+  assert.equal(label.y, 40);
+});
+
+test('redraws the connector gap when an existing label changes width', () => {
+  const start = codeSource.indexOf('if (msg.type === "update-arrow-label")');
+  const end = codeSource.indexOf('\n  if (msg.type === "refresh-position")', start);
+
+  assert.notEqual(start, -1, 'label update handler must exist');
+  assert.notEqual(end, -1, 'label update handler must end before position refresh');
+
+  const handler = codeSource.slice(start, end);
+  assert.match(handler, /if \(oldLabel === newLabel\) return;/);
+  assert.match(handler, /const newArrow = await drawArrow\(source, target, options, arrowGroup\);/);
+  assert.doesNotMatch(handler, /labelNode\.characters = newLabel;/);
 });
 
 test('keeps the existing arrow until the replacement group is created', () => {

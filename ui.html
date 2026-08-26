@@ -23,6 +23,7 @@
       padding: 14px 16px 8px;
       background: var(--c-bg);
       line-height: 1;
+      overflow: hidden;
     }
     body.minimized { padding-bottom: 14px; }
 
@@ -52,8 +53,7 @@
 
     /* Minimized: hide non-Frame sections and hint; keep Create button visible */
     body.minimized #createMode > .section:not(:first-child),
-    body.minimized #editMode > .section:not(:first-child),
-    body.minimized #hint { display: none !important; }
+    body.minimized #editMode > .section:not(:first-child) { display: none !important; }
     body.minimized #createMode { gap: 16px !important; }
 
     /* ---- Section ---- */
@@ -70,6 +70,7 @@
       font-size: 14px;
       font-weight: 500;
       color: var(--c-text);
+      margin: 0 8px;
     }
     /* ---- Section Inner (nested) ---- */
     .section-inner {
@@ -166,9 +167,14 @@
       justify-content: center;
       gap: 5px;
     }
-    .add-point-btn:hover {
+    .add-point-btn:hover:not(:disabled) {
       background: var(--c-bg2);
       color: var(--c-text);
+    }
+    .add-point-btn:disabled {
+      opacity: 0.35;
+      color: var(--c-text3);
+      cursor: not-allowed;
     }
     .add-point-btn:focus-visible {
       outline: 1px solid var(--c-text2);
@@ -209,6 +215,7 @@
       gap: 8px;
       padding: 0 8px;
       min-width: 0;
+      height: 80px;
       min-height: 80px;
     }
     .frame-row {
@@ -419,9 +426,11 @@
       background: var(--c-bg2);
       border-radius: 4px;
       padding: 6px 8px 7px;
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
+      display: grid;
+      grid-template-columns: repeat(12, 14px);
+      justify-content: space-between;
+      column-gap: 0;
+      row-gap: 8px;
       max-height: 49px;
       overflow-y: auto;
     }
@@ -440,7 +449,8 @@
     .stroke-top {
       display: flex;
       align-items: center;
-      gap: 16px;
+      justify-content: space-between;
+      gap: 0;
     }
     .weight-row {
       display: flex;
@@ -674,6 +684,9 @@
       outline: none;
     }
     .label-input:focus { border-color: var(--c-text2); }
+    .label-input:disabled {
+      background: var(--c-bg2);
+    }
     .label-input::placeholder { color: var(--c-text3); }
 
     .label-style-row {
@@ -728,7 +741,7 @@
       font-size: 14px;
     }
     .btn-label-ja {
-      font-size: 10px;
+      font-size: 9px;
       opacity: 0.72;
     }
     .btn-primary {
@@ -756,17 +769,12 @@
       display: flex;
       flex-direction: row;
       gap: 8px;
+      margin: 0 8px;
     }
     .btn-stack .btn {
       width: auto;
       min-width: 0;
       flex: 1;
-    }
-    .hint {
-      font-size: 11px;
-      color: var(--c-text3);
-      text-align: center;
-      margin-top: -6px;
     }
   </style>
 </head>
@@ -776,7 +784,7 @@
   </button>
 
   <!-- Create Mode -->
-  <div id="createMode" style="display:flex;flex-direction:column;gap:10px">
+  <div id="createMode" style="display:flex;flex-direction:column;gap:16px">
     <div class="section frame-section">
       <div class="section-title">Frame</div>
       <div class="quick-connect-control">
@@ -907,7 +915,7 @@
           <label>Size</label>
           <div class="weight-box">
             <span class="w-prefix">Aa</span>
-            <input type="text" id="labelFontSize" inputmode="decimal" value="14" />
+            <input type="text" id="labelFontSize" inputmode="decimal" value="16" />
           </div>
         </div>
         <div class="text-toggle-group" id="labelWeight">
@@ -915,7 +923,7 @@
           <button class="text-toggle-btn" data-value="bold">Bold</button>
         </div>
       </div>
-      <input type="text" class="label-input" id="labelInput" placeholder="Input Text" />
+      <input type="text" class="label-input" id="labelInput" placeholder="Input Text" disabled />
     </div>
 
     <div class="btn-stack">
@@ -928,16 +936,21 @@
         <span class="btn-label-ja" lang="ja">全矢印・変更項目のみ</span>
       </button>
     </div>
-    <div class="hint" id="hint">Select 2 frames to connect</div>
   </div>
 
   <!-- Edit Mode -->
-  <div id="editMode" style="display:none;flex-direction:column;gap:10px;">
+  <div id="editMode" style="display:none;flex-direction:column;gap:16px;">
     <div class="section">
       <div class="section-title">Frame</div>
       <div class="frame-container">
         <div class="frame-rows" id="editFrameList"></div>
       </div>
+      <button class="add-point-btn" id="editAddPointBtn" disabled>
+        <span class="point-dot" aria-hidden="true"></span>
+        <span lang="en">Add Point</span>
+        <span class="add-point-separator" aria-hidden="true">/</span>
+        <span lang="ja">支点を追加</span>
+      </button>
       <div class="arrow-dir-row">
         <select class="arrow-dir-select" id="editArrowDirStart">
           <option value="none" selected>━  None</option>
@@ -1042,7 +1055,7 @@
           <label>Size</label>
           <div class="weight-box">
             <span class="w-prefix">Aa</span>
-            <input type="text" id="editLabelFontSize" inputmode="decimal" value="14" />
+            <input type="text" id="editLabelFontSize" inputmode="decimal" value="16" />
           </div>
         </div>
         <div class="text-toggle-group" id="editLabelWeight">
@@ -1121,7 +1134,7 @@
 
     // ---- Minimize ----
     const MINIMIZE_KEY = 'arrow-connector-minimized';
-    const EXPANDED_SIZE = { w: 340, h: 560 };
+    const EXPANDED_SIZE = { w: 340, h: 584 };
     const MINIMIZED_SIZE = { w: 340, h: 270 };
     const ICON_MINIMIZE = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10l5-5 5 5"/></svg>';
     const ICON_EXPAND   = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6l5 5 5-5"/></svg>';
@@ -1181,7 +1194,7 @@
     const editMode = document.getElementById('editMode');
     const frameList = document.getElementById('frameList');
     const connectBtn = document.getElementById('connectBtn');
-    const hint = document.getElementById('hint');
+    const labelInput = document.getElementById('labelInput');
     const strokeWeight = document.getElementById('strokeWeight');
     const editStrokeWeight = document.getElementById('editStrokeWeight');
     const editFrameList = document.getElementById('editFrameList');
@@ -1463,7 +1476,7 @@
         editStartPicker.setValue(o.startSide || 'auto');
         editEndPicker.setValue(o.endSide || 'auto');
         document.getElementById('editLabelInput').value = o.label || '';
-        document.getElementById('editLabelFontSize').value = o.labelFontSize || 14;
+        document.getElementById('editLabelFontSize').value = o.labelFontSize || 16;
         labelWeightEdit.setValue(o.labelBold ? 'bold' : 'regular');
 
         arrowDirEdit.setValue({ start: typeof o.startArrow === 'string' ? o.startArrow : (o.startArrow ? 'arrow' : 'none'), end: typeof o.endArrow === 'string' ? o.endArrow : (o.endArrow !== false ? 'arrow' : 'none') });
@@ -1480,12 +1493,17 @@
       }
     };
 
+    function shouldDisableCreateLabelInput(frameCount) {
+      return frameCount < 2;
+    }
+
     function updateCreateUI() {
+      const createDisabled = shouldDisableCreateLabelInput(frames.length);
+      connectBtn.disabled = createDisabled;
+      labelInput.disabled = createDisabled;
       frameList.innerHTML = '';
       if (frames.length === 0) {
         frameList.innerHTML = '<div class="empty-state">Select 2 frames</div>';
-        connectBtn.disabled = true;
-        hint.textContent = 'Select 2 frames to connect';
         document.getElementById('swapBtn').disabled = true;
         return;
       }
@@ -1506,17 +1524,40 @@
         else { endPicker = createInlinePicker(ph, colors[i]); }
       });
 
-      if (frames.length === 1) { connectBtn.disabled = true; hint.textContent = 'Select 1 more frame'; }
-      else { connectBtn.disabled = false; hint.textContent = frames.length > 2 ? 'First 2 frames will be connected' : ''; }
       document.getElementById('swapBtn').disabled = frames.length < 2;
     }
 
     // ---- Prefs ----
     const STORAGE_KEY = 'arrow-connector-prefs';
-    function readStrokeWeight(input, fallback = 2) {
+    const PREFS_VERSION = 3;
+    const DEFAULT_STROKE_WEIGHT = 2;
+    const DEFAULT_LABEL_FONT_SIZE = 16;
+    function readStrokeWeight(input, fallback = DEFAULT_STROKE_WEIGHT) {
       const value = parseFloat(input.value);
       if (!Number.isFinite(value)) return fallback;
-      return Math.round(Math.max(0.5, Math.min(20, value)) * 10) / 10;
+      return Math.round(Math.max(0.5, Math.min(20, value)) * 2) / 2;
+    }
+    function stepStrokeWeight(value, direction) {
+      const parsed = parseFloat(value);
+      const base = Number.isFinite(parsed) ? parsed : DEFAULT_STROKE_WEIGHT;
+      const next = direction === 'up' ? base + 0.5 : base - 0.5;
+      return Math.round(Math.max(0.5, Math.min(20, next)) * 2) / 2;
+    }
+    function resolveDefaultPreference(value, legacyDefault, currentDefault, storedVersion) {
+      const parsed = Number(value);
+      if (!Number.isFinite(parsed)) return currentDefault;
+      if ((!Number.isFinite(storedVersion) || storedVersion < PREFS_VERSION) && parsed === legacyDefault) {
+        return currentDefault;
+      }
+      return parsed;
+    }
+    function resolveStrokePreference(value, storedVersion) {
+      const parsed = Number(value);
+      if (!Number.isFinite(parsed)) return DEFAULT_STROKE_WEIGHT;
+      if ((!Number.isFinite(storedVersion) || storedVersion === 2) && parsed === 4) {
+        return DEFAULT_STROKE_WEIGHT;
+      }
+      return parsed;
     }
     function buildRefreshStylePatch(changedFields, values) {
       const patch = {};
@@ -1547,6 +1588,7 @@
     }
     function savePrefs() {
       const p = {
+        version: PREFS_VERSION,
         color: colorPicker.value,
         strokeWeight: readStrokeWeight(strokeWeight),
         lineType: lineTypeCreate.getValue(),
@@ -1566,14 +1608,14 @@
         if (!raw) return;
         const p = JSON.parse(raw);
         if (p.color) { colorPicker.value = p.color; colorHex.textContent = p.color.replace('#',''); colorSwatch.style.background = p.color; }
-        if (p.strokeWeight) strokeWeight.value = p.strokeWeight;
+        strokeWeight.value = resolveStrokePreference(p.strokeWeight, p.version);
         if (p.lineType) lineTypeCreate.setValue(p.lineType);
         else if (typeof p.curved === 'boolean') lineTypeCreate.setValue(p.curved ? 'curve' : 'elbow-l');
         if (typeof p.dashed === 'boolean') document.getElementById('dashed').checked = p.dashed;
         if (p.arrowDirStart || p.arrowDirEnd) arrowDirCreate.setValue({ start: p.arrowDirStart || 'none', end: p.arrowDirEnd || 'arrow' });
         else if (p.arrowDirValue) arrowDirCreate.setValue(p.arrowDirValue);
         if (p.bendPosition) { bendPosition.value = p.bendPosition; bendInput.value = p.bendPosition; updateSliderBg(bendPosition); }
-        if (p.labelFontSize) document.getElementById('labelFontSize').value = p.labelFontSize;
+        document.getElementById('labelFontSize').value = resolveDefaultPreference(p.labelFontSize, 14, DEFAULT_LABEL_FONT_SIZE, p.version);
         if (typeof p.labelBold === 'boolean') labelWeightCreate.setValue(p.labelBold ? 'bold' : 'regular');
         if (typeof p.quickConnect === 'boolean') document.getElementById('quickConnect').checked = p.quickConnect;
       } catch {}
@@ -1589,7 +1631,7 @@
         startSide: startPicker ? startPicker.getValue() : 'auto',
         endSide: endPicker ? endPicker.getValue() : 'auto',
         label: document.getElementById('labelInput').value,
-        labelFontSize: parseFloat(document.getElementById('labelFontSize').value) || 14,
+        labelFontSize: parseFloat(document.getElementById('labelFontSize').value) || DEFAULT_LABEL_FONT_SIZE,
         labelBold: labelWeightCreate.getValue() === 'bold',
         startArrow: a.startArrow, endArrow: a.endArrow,
         bendPosition: parseInt(bendPosition.value) / 100,
@@ -1606,7 +1648,7 @@
         startSide: editStartPicker ? editStartPicker.getValue() : 'auto',
         endSide: editEndPicker ? editEndPicker.getValue() : 'auto',
         label: document.getElementById('editLabelInput').value,
-        labelFontSize: parseFloat(document.getElementById('editLabelFontSize').value) || 14,
+        labelFontSize: parseFloat(document.getElementById('editLabelFontSize').value) || DEFAULT_LABEL_FONT_SIZE,
         labelBold: labelWeightEdit.getValue() === 'bold',
         startArrow: a.startArrow, endArrow: a.endArrow,
         bendPosition: parseInt(editBendPosition.value) / 100,
@@ -1744,7 +1786,7 @@
         parent.postMessage({ pluginMessage: { type: 'update-arrow', arrowId, ...o } }, '*');
       }, 80);
     }
-    // Label入力は矢印全体を作り直さず、テキストだけ差し替える軽量経路を使う
+    // Label入力はデバウンスし、入力後の文字幅で線のギャップを再計算する
     function sendLabelUpdate() {
       if (!currentArrowId) return;
       const arrowId = currentArrowId;
@@ -1762,11 +1804,7 @@
     function weightKeydown(e) {
       if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
         e.preventDefault();
-        const step = e.shiftKey ? 1 : 0.1;
-        let v = parseFloat(e.target.value) || 1;
-        v = e.key === 'ArrowUp' ? v + step : v - step;
-        v = Math.round(Math.max(0.5, Math.min(20, v)) * 10) / 10;
-        e.target.value = v;
+        e.target.value = stepStrokeWeight(e.target.value, e.key === 'ArrowUp' ? 'up' : 'down');
         e.target.dispatchEvent(new Event('input'));
       }
     }
