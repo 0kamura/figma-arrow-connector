@@ -117,6 +117,16 @@ test('redraws the connector gap when an existing label changes width', () => {
   assert.doesNotMatch(handler, /labelNode\.characters = newLabel;/);
 });
 
+test('silent arrow edits skip the success notification', () => {
+  const start = codeSource.indexOf('if (msg.type === "update-arrow")');
+  const end = codeSource.indexOf('\n  // Label入力はデバウンス後', start);
+
+  assert.notEqual(start, -1, 'arrow update handler must exist');
+  assert.notEqual(end, -1, 'arrow update handler must end before label updates');
+  const handler = codeSource.slice(start, end);
+  assert.match(handler, /if \(msg\.silent !== true\) figma\.notify\("矢印を更新しました"\);/);
+});
+
 test('keeps the existing arrow until the replacement group is created', () => {
   const existingBranch = codeSource.slice(
     codeSource.indexOf('if (existingGroup) {'),

@@ -486,6 +486,24 @@
       outline: none;
     }
     .weight-box input::-webkit-inner-spin-button { -webkit-appearance: none; }
+    .label-size-box { width: 72px; }
+    .weight-box select {
+      flex: 1;
+      min-width: 0;
+      border: none;
+      background-color: transparent;
+      color: var(--c-text);
+      font-size: 11px;
+      font-family: inherit;
+      outline: none;
+      cursor: pointer;
+      appearance: none;
+      -webkit-appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg width='8' height='5' viewBox='0 0 8 5' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1l3 3 3-3' stroke='%235e5e5e' stroke-width='1.25' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right center;
+      padding-right: 12px;
+    }
 
     /* Small toggle 24x12 */
     .toggle-field {
@@ -913,9 +931,21 @@
       <div class="label-style-row">
         <div class="weight-row">
           <label>Size</label>
-          <div class="weight-box">
+          <div class="weight-box label-size-box">
             <span class="w-prefix">Aa</span>
-            <input type="text" id="labelFontSize" inputmode="decimal" value="16" />
+            <select id="labelFontSize">
+              <option value="10">10</option>
+              <option value="12">12</option>
+              <option value="14">14</option>
+              <option value="16" selected>16</option>
+              <option value="18">18</option>
+              <option value="20">20</option>
+              <option value="24">24</option>
+              <option value="28">28</option>
+              <option value="32">32</option>
+              <option value="40">40</option>
+              <option value="48">48</option>
+            </select>
           </div>
         </div>
         <div class="text-toggle-group" id="labelWeight">
@@ -1053,9 +1083,21 @@
       <div class="label-style-row">
         <div class="weight-row">
           <label>Size</label>
-          <div class="weight-box">
+          <div class="weight-box label-size-box">
             <span class="w-prefix">Aa</span>
-            <input type="text" id="editLabelFontSize" inputmode="decimal" value="16" />
+            <select id="editLabelFontSize">
+              <option value="10">10</option>
+              <option value="12">12</option>
+              <option value="14">14</option>
+              <option value="16" selected>16</option>
+              <option value="18">18</option>
+              <option value="20">20</option>
+              <option value="24">24</option>
+              <option value="28">28</option>
+              <option value="32">32</option>
+              <option value="40">40</option>
+              <option value="48">48</option>
+            </select>
           </div>
         </div>
         <div class="text-toggle-group" id="editLabelWeight">
@@ -1478,7 +1520,7 @@
         editStartPicker.setValue(o.startSide || 'auto');
         editEndPicker.setValue(o.endSide || 'auto');
         document.getElementById('editLabelInput').value = o.label || '';
-        editLabelFontSize.value = o.labelFontSize || 16;
+        setLabelFontSizeSelectValue(editLabelFontSize, o.labelFontSize || 16);
         labelWeightEdit.setValue(o.labelBold ? 'bold' : 'regular');
 
         arrowDirEdit.setValue({ start: typeof o.startArrow === 'string' ? o.startArrow : (o.startArrow ? 'arrow' : 'none'), end: typeof o.endArrow === 'string' ? o.endArrow : (o.endArrow !== false ? 'arrow' : 'none') });
@@ -1542,6 +1584,20 @@
     function readLabelFontSize(input, fallback = DEFAULT_LABEL_FONT_SIZE) {
       const value = parseFloat(input.value);
       return Number.isFinite(value) && value > 0 ? value : fallback;
+    }
+    function setLabelFontSizeSelectValue(select, rawValue) {
+      const value = readLabelFontSize({ value: rawValue });
+      const optionValue = String(value);
+      const customOption = select.querySelector('option[data-custom="true"]');
+      if (customOption && customOption.value !== optionValue) customOption.remove();
+      if (!Array.from(select.options).some(option => option.value === optionValue)) {
+        const option = document.createElement('option');
+        option.value = optionValue;
+        option.textContent = optionValue;
+        option.dataset.custom = 'true';
+        select.appendChild(option);
+      }
+      select.value = optionValue;
     }
     function stepStrokeWeight(value, direction) {
       const parsed = parseFloat(value);
@@ -1621,7 +1677,10 @@
         if (p.arrowDirStart || p.arrowDirEnd) arrowDirCreate.setValue({ start: p.arrowDirStart || 'none', end: p.arrowDirEnd || 'arrow' });
         else if (p.arrowDirValue) arrowDirCreate.setValue(p.arrowDirValue);
         if (p.bendPosition) { bendPosition.value = p.bendPosition; bendInput.value = p.bendPosition; updateSliderBg(bendPosition); }
-        labelFontSize.value = resolveDefaultPreference(p.labelFontSize, 14, DEFAULT_LABEL_FONT_SIZE, p.version);
+        setLabelFontSizeSelectValue(
+          labelFontSize,
+          resolveDefaultPreference(p.labelFontSize, 14, DEFAULT_LABEL_FONT_SIZE, p.version)
+        );
         if (typeof p.labelBold === 'boolean') labelWeightCreate.setValue(p.labelBold ? 'bold' : 'regular');
         if (typeof p.quickConnect === 'boolean') document.getElementById('quickConnect').checked = p.quickConnect;
       } catch {}
@@ -1668,7 +1727,7 @@
       bendInput.value = Math.round(o.bendPosition * 100);
       updateSliderBg(bendPosition);
       arrowDirCreate.setValue(arrowDirEdit.getValue());
-      labelFontSize.value = o.labelFontSize;
+      setLabelFontSizeSelectValue(labelFontSize, o.labelFontSize);
       labelWeightCreate.setValue(o.labelBold ? 'bold' : 'regular');
       savePrefs();
       return o;
@@ -1780,15 +1839,18 @@
     window.addEventListener('beforeunload', savePrefs);
     window.addEventListener('pagehide', savePrefs);
     // ---- Edit mode: 即時反映 ----
-    function sendEditUpdate() {
+    function sendEditUpdate(silent = false) {
       if (!currentArrowId) return;
       const arrowId = currentArrowId;
       clearTimeout(editDebounceTimer);
       editDebounceTimer = setTimeout(() => {
         if (currentArrowId !== arrowId) return;
         const o = getEditOpts();
-        parent.postMessage({ pluginMessage: { type: 'update-arrow', arrowId, ...o } }, '*');
+        parent.postMessage({ pluginMessage: { type: 'update-arrow', arrowId, silent: silent === true, ...o } }, '*');
       }, 80);
+    }
+    function sendSilentEditUpdate() {
+      sendEditUpdate(true);
     }
     // Label入力はデバウンスし、入力後の文字幅で線のギャップを再計算する
     function sendLabelUpdate() {
@@ -1815,29 +1877,14 @@
     function selectWeightOnFocus(e) {
       e.currentTarget.select();
     }
-    function commitCreateLabelFontSize() {
-      labelFontSize.value = readLabelFontSize(labelFontSize);
-      savePrefs();
-    }
-    function commitEditLabelFontSize() {
-      editLabelFontSize.value = readLabelFontSize(editLabelFontSize);
-      sendEditUpdate();
-    }
-    function commitLabelFontSizeOnEnter(e) {
-      if (e.key === 'Enter') e.currentTarget.blur();
-    }
     strokeWeight.addEventListener('focus', selectWeightOnFocus);
     strokeWeight.addEventListener('blur', () => clampWeight(strokeWeight));
     strokeWeight.addEventListener('keydown', weightKeydown);
     editStrokeWeight.addEventListener('focus', selectWeightOnFocus);
     editStrokeWeight.addEventListener('blur', () => clampWeight(editStrokeWeight));
     editStrokeWeight.addEventListener('keydown', weightKeydown);
-    labelFontSize.addEventListener('focus', selectWeightOnFocus);
-    labelFontSize.addEventListener('blur', commitCreateLabelFontSize);
-    labelFontSize.addEventListener('keydown', commitLabelFontSizeOnEnter);
-    editLabelFontSize.addEventListener('focus', selectWeightOnFocus);
-    editLabelFontSize.addEventListener('blur', commitEditLabelFontSize);
-    editLabelFontSize.addEventListener('keydown', commitLabelFontSizeOnEnter);
+    labelFontSize.addEventListener('change', savePrefs);
+    editLabelFontSize.addEventListener('change', sendSilentEditUpdate);
 
     editColorPicker.addEventListener('input', sendEditUpdate);
     editStrokeWeight.addEventListener('input', sendEditUpdate);
@@ -1849,7 +1896,7 @@
     editBendInput.addEventListener('change', sendEditUpdate);
     document.getElementById('editLabelInput').addEventListener('input', sendLabelUpdate);
     document.getElementById('editLabelWeight').addEventListener('click', (e) => {
-      if (e.target.closest('.text-toggle-btn')) setTimeout(sendEditUpdate, 0);
+      if (e.target.closest('.text-toggle-btn')) setTimeout(sendSilentEditUpdate, 0);
     });
     // arrow dir selects
     document.getElementById('editArrowDirStart').addEventListener('change', sendEditUpdate);

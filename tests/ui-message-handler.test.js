@@ -125,7 +125,7 @@ test('debounced edits keep their original arrow id and are cancelled on selectio
   assert.match(uiSource, /function cancelPendingEditUpdates\(\)/);
   assert.match(uiSource, /const arrowId = currentArrowId;/);
   assert.match(uiSource, /if \(currentArrowId !== arrowId\) return;/);
-  assert.match(uiSource, /type: 'update-arrow', arrowId, \.\.\.o/);
+  assert.match(uiSource, /type: 'update-arrow', arrowId, silent: silent === true, \.\.\.o/);
   assert.match(uiSource, /type: 'update-arrow-label', arrowId, label/);
 
   const selectionBranch = uiSource.slice(
@@ -254,21 +254,32 @@ test('focusing a stroke weight field selects its existing value for replacement'
   assert.match(uiSource, /editStrokeWeight\.addEventListener\('focus', selectWeightOnFocus\)/);
 });
 
-test('label font size replaces the current value and commits only after editing', () => {
-  const { readLabelFontSize } = loadStrokePreferenceHelpers();
+test('label font size uses stable dropdown choices and preserves custom existing sizes', () => {
+  for (const id of ['labelFontSize', 'editLabelFontSize']) {
+    assert.match(uiSource, new RegExp(`<select[^>]*id="${id}"`));
+    assert.doesNotMatch(uiSource, new RegExp(`<input[^>]*id="${id}"`));
+  }
+  for (const size of [10, 12, 14, 16, 18, 20, 24, 28, 32, 40, 48]) {
+    assert.match(uiSource, new RegExp(`<option value="${size}"(?: selected)?>${size}</option>`));
+  }
 
-  assert.equal(typeof readLabelFontSize, 'function');
-  assert.equal(readLabelFontSize({ value: '24' }), 24);
-  assert.equal(readLabelFontSize({ value: '' }), 16);
-  assert.equal(readLabelFontSize({ value: '0' }), 16);
-  assert.equal(readLabelFontSize({ value: '-1' }), 16);
+  assert.match(uiSource, /labelFontSize\.addEventListener\('change', savePrefs\)/);
+  assert.match(uiSource, /editLabelFontSize\.addEventListener\('change', sendSilentEditUpdate\)/);
+  assert.match(uiSource, /function setLabelFontSizeSelectValue\(select, rawValue\)/);
+  assert.match(uiSource, /setLabelFontSizeSelectValue\(editLabelFontSize, o\.labelFontSize \|\| 16\)/);
+  assert.doesNotMatch(uiSource, /labelFontSizeOriginalValues/);
+  assert.doesNotMatch(uiSource, /beginLabelFontSizeEdit/);
+  assert.doesNotMatch(uiSource, /finishLabelFontSizeEdit/);
+});
 
-  assert.match(uiSource, /labelFontSize\.addEventListener\('focus', selectWeightOnFocus\)/);
-  assert.match(uiSource, /editLabelFontSize\.addEventListener\('focus', selectWeightOnFocus\)/);
-  assert.match(uiSource, /labelFontSize\.addEventListener\('blur', commitCreateLabelFontSize\)/);
-  assert.match(uiSource, /editLabelFontSize\.addEventListener\('blur', commitEditLabelFontSize\)/);
-  assert.doesNotMatch(uiSource, /labelFontSize\.addEventListener\('input'/);
-  assert.doesNotMatch(uiSource, /editLabelFontSize\.addEventListener\('input'/);
+test('typography edits update the selected arrow without requesting a success toast', () => {
+  assert.match(uiSource, /function sendSilentEditUpdate\(\) \{\s*sendEditUpdate\(true\);\s*\}/);
+  assert.match(uiSource, /silent: silent === true/);
+  assert.match(uiSource, /editLabelFontSize\.addEventListener\('change', sendSilentEditUpdate\)/);
+  assert.match(
+    uiSource,
+    /document\.getElementById\('editLabelWeight'\)[\s\S]*setTimeout\(sendSilentEditUpdate, 0\)/
+  );
 });
 
 test('refresh sends only the style fields marked as changed', () => {

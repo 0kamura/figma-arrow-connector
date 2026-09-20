@@ -1187,7 +1187,8 @@ figma.ui.onmessage = async (msg) => {
             }
             figma.currentPage.selection = [newArrow];
             patchArrowIndex(arrowId, newArrow.id, [arrowData.sourceId, arrowData.targetId]);
-            figma.notify("矢印を更新しました");
+            if (msg.silent !== true)
+                figma.notify("矢印を更新しました");
         }
         // Label入力はデバウンス後に再描画し、変化した文字幅へ線のギャップを追従させる。
         if (msg.type === "update-arrow-label") {
