@@ -82,7 +82,7 @@ function loadStrokePreferenceHelpers() {
   assert.notEqual(end, -1, 'stroke preference helpers must be defined before refresh patching');
 
   return new Function(
-    `${uiSource.slice(start, end)}\nreturn { readStrokeWeight, stepStrokeWeight, resolveDefaultPreference, resolveStrokePreference: typeof resolveStrokePreference === 'function' ? resolveStrokePreference : undefined };`
+    `${uiSource.slice(start, end)}\nreturn { readStrokeWeight, readLabelFontSize: typeof readLabelFontSize === 'function' ? readLabelFontSize : undefined, stepStrokeWeight, resolveDefaultPreference, resolveStrokePreference: typeof resolveStrokePreference === 'function' ? resolveStrokePreference : undefined };`
   )();
 }
 
@@ -252,6 +252,23 @@ test('focusing a stroke weight field selects its existing value for replacement'
   assert.equal(selected, true);
   assert.match(uiSource, /strokeWeight\.addEventListener\('focus', selectWeightOnFocus\)/);
   assert.match(uiSource, /editStrokeWeight\.addEventListener\('focus', selectWeightOnFocus\)/);
+});
+
+test('label font size replaces the current value and commits only after editing', () => {
+  const { readLabelFontSize } = loadStrokePreferenceHelpers();
+
+  assert.equal(typeof readLabelFontSize, 'function');
+  assert.equal(readLabelFontSize({ value: '24' }), 24);
+  assert.equal(readLabelFontSize({ value: '' }), 16);
+  assert.equal(readLabelFontSize({ value: '0' }), 16);
+  assert.equal(readLabelFontSize({ value: '-1' }), 16);
+
+  assert.match(uiSource, /labelFontSize\.addEventListener\('focus', selectWeightOnFocus\)/);
+  assert.match(uiSource, /editLabelFontSize\.addEventListener\('focus', selectWeightOnFocus\)/);
+  assert.match(uiSource, /labelFontSize\.addEventListener\('blur', commitCreateLabelFontSize\)/);
+  assert.match(uiSource, /editLabelFontSize\.addEventListener\('blur', commitEditLabelFontSize\)/);
+  assert.doesNotMatch(uiSource, /labelFontSize\.addEventListener\('input'/);
+  assert.doesNotMatch(uiSource, /editLabelFontSize\.addEventListener\('input'/);
 });
 
 test('refresh sends only the style fields marked as changed', () => {

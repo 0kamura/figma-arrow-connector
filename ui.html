@@ -1197,6 +1197,8 @@
     const labelInput = document.getElementById('labelInput');
     const strokeWeight = document.getElementById('strokeWeight');
     const editStrokeWeight = document.getElementById('editStrokeWeight');
+    const labelFontSize = document.getElementById('labelFontSize');
+    const editLabelFontSize = document.getElementById('editLabelFontSize');
     const editFrameList = document.getElementById('editFrameList');
 
     // Bend
@@ -1476,7 +1478,7 @@
         editStartPicker.setValue(o.startSide || 'auto');
         editEndPicker.setValue(o.endSide || 'auto');
         document.getElementById('editLabelInput').value = o.label || '';
-        document.getElementById('editLabelFontSize').value = o.labelFontSize || 16;
+        editLabelFontSize.value = o.labelFontSize || 16;
         labelWeightEdit.setValue(o.labelBold ? 'bold' : 'regular');
 
         arrowDirEdit.setValue({ start: typeof o.startArrow === 'string' ? o.startArrow : (o.startArrow ? 'arrow' : 'none'), end: typeof o.endArrow === 'string' ? o.endArrow : (o.endArrow !== false ? 'arrow' : 'none') });
@@ -1537,6 +1539,10 @@
       if (!Number.isFinite(value)) return fallback;
       return Math.round(Math.max(0.5, Math.min(20, value)) * 2) / 2;
     }
+    function readLabelFontSize(input, fallback = DEFAULT_LABEL_FONT_SIZE) {
+      const value = parseFloat(input.value);
+      return Number.isFinite(value) && value > 0 ? value : fallback;
+    }
     function stepStrokeWeight(value, direction) {
       const parsed = parseFloat(value);
       const base = Number.isFinite(parsed) ? parsed : DEFAULT_STROKE_WEIGHT;
@@ -1596,7 +1602,7 @@
         arrowDirStart: arrowDirCreate.getValue().start,
         arrowDirEnd: arrowDirCreate.getValue().end,
         bendPosition: parseInt(bendPosition.value),
-        labelFontSize: parseFloat(document.getElementById('labelFontSize').value),
+        labelFontSize: readLabelFontSize(labelFontSize),
         labelBold: labelWeightCreate.getValue() === 'bold',
         quickConnect: document.getElementById('quickConnect').checked,
       };
@@ -1615,7 +1621,7 @@
         if (p.arrowDirStart || p.arrowDirEnd) arrowDirCreate.setValue({ start: p.arrowDirStart || 'none', end: p.arrowDirEnd || 'arrow' });
         else if (p.arrowDirValue) arrowDirCreate.setValue(p.arrowDirValue);
         if (p.bendPosition) { bendPosition.value = p.bendPosition; bendInput.value = p.bendPosition; updateSliderBg(bendPosition); }
-        document.getElementById('labelFontSize').value = resolveDefaultPreference(p.labelFontSize, 14, DEFAULT_LABEL_FONT_SIZE, p.version);
+        labelFontSize.value = resolveDefaultPreference(p.labelFontSize, 14, DEFAULT_LABEL_FONT_SIZE, p.version);
         if (typeof p.labelBold === 'boolean') labelWeightCreate.setValue(p.labelBold ? 'bold' : 'regular');
         if (typeof p.quickConnect === 'boolean') document.getElementById('quickConnect').checked = p.quickConnect;
       } catch {}
@@ -1631,7 +1637,7 @@
         startSide: startPicker ? startPicker.getValue() : 'auto',
         endSide: endPicker ? endPicker.getValue() : 'auto',
         label: document.getElementById('labelInput').value,
-        labelFontSize: parseFloat(document.getElementById('labelFontSize').value) || DEFAULT_LABEL_FONT_SIZE,
+        labelFontSize: readLabelFontSize(labelFontSize),
         labelBold: labelWeightCreate.getValue() === 'bold',
         startArrow: a.startArrow, endArrow: a.endArrow,
         bendPosition: parseInt(bendPosition.value) / 100,
@@ -1648,7 +1654,7 @@
         startSide: editStartPicker ? editStartPicker.getValue() : 'auto',
         endSide: editEndPicker ? editEndPicker.getValue() : 'auto',
         label: document.getElementById('editLabelInput').value,
-        labelFontSize: parseFloat(document.getElementById('editLabelFontSize').value) || DEFAULT_LABEL_FONT_SIZE,
+        labelFontSize: readLabelFontSize(editLabelFontSize),
         labelBold: labelWeightEdit.getValue() === 'bold',
         startArrow: a.startArrow, endArrow: a.endArrow,
         bendPosition: parseInt(editBendPosition.value) / 100,
@@ -1662,7 +1668,7 @@
       bendInput.value = Math.round(o.bendPosition * 100);
       updateSliderBg(bendPosition);
       arrowDirCreate.setValue(arrowDirEdit.getValue());
-      document.getElementById('labelFontSize').value = o.labelFontSize;
+      labelFontSize.value = o.labelFontSize;
       labelWeightCreate.setValue(o.labelBold ? 'bold' : 'regular');
       savePrefs();
       return o;
@@ -1762,8 +1768,6 @@
     document.getElementById('arrowDirEnd').addEventListener('change', savePrefs);
     bendPosition.addEventListener('input', () => { markRefreshField('bendPosition'); savePrefs(); });
     bendInput.addEventListener('change', () => { markRefreshField('bendPosition'); savePrefs(); });
-    document.getElementById('labelFontSize').addEventListener('input', savePrefs);
-    document.getElementById('labelFontSize').addEventListener('blur', savePrefs);
     document.getElementById('labelWeight').addEventListener('click', (e) => {
       if (e.target.closest('.text-toggle-btn')) setTimeout(savePrefs, 0);
     });
@@ -1811,12 +1815,29 @@
     function selectWeightOnFocus(e) {
       e.currentTarget.select();
     }
+    function commitCreateLabelFontSize() {
+      labelFontSize.value = readLabelFontSize(labelFontSize);
+      savePrefs();
+    }
+    function commitEditLabelFontSize() {
+      editLabelFontSize.value = readLabelFontSize(editLabelFontSize);
+      sendEditUpdate();
+    }
+    function commitLabelFontSizeOnEnter(e) {
+      if (e.key === 'Enter') e.currentTarget.blur();
+    }
     strokeWeight.addEventListener('focus', selectWeightOnFocus);
     strokeWeight.addEventListener('blur', () => clampWeight(strokeWeight));
     strokeWeight.addEventListener('keydown', weightKeydown);
     editStrokeWeight.addEventListener('focus', selectWeightOnFocus);
     editStrokeWeight.addEventListener('blur', () => clampWeight(editStrokeWeight));
     editStrokeWeight.addEventListener('keydown', weightKeydown);
+    labelFontSize.addEventListener('focus', selectWeightOnFocus);
+    labelFontSize.addEventListener('blur', commitCreateLabelFontSize);
+    labelFontSize.addEventListener('keydown', commitLabelFontSizeOnEnter);
+    editLabelFontSize.addEventListener('focus', selectWeightOnFocus);
+    editLabelFontSize.addEventListener('blur', commitEditLabelFontSize);
+    editLabelFontSize.addEventListener('keydown', commitLabelFontSizeOnEnter);
 
     editColorPicker.addEventListener('input', sendEditUpdate);
     editStrokeWeight.addEventListener('input', sendEditUpdate);
@@ -1827,8 +1848,6 @@
     editBendPosition.addEventListener('input', sendEditUpdate);
     editBendInput.addEventListener('change', sendEditUpdate);
     document.getElementById('editLabelInput').addEventListener('input', sendLabelUpdate);
-    document.getElementById('editLabelFontSize').addEventListener('input', sendEditUpdate);
-    document.getElementById('editLabelFontSize').addEventListener('blur', sendEditUpdate);
     document.getElementById('editLabelWeight').addEventListener('click', (e) => {
       if (e.target.closest('.text-toggle-btn')) setTimeout(sendEditUpdate, 0);
     });
