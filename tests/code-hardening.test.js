@@ -119,7 +119,7 @@ test('redraws the connector gap when an existing label changes width', () => {
 
 test('silent arrow edits skip the success notification', () => {
   const start = codeSource.indexOf('if (msg.type === "update-arrow")');
-  const end = codeSource.indexOf('\n  // Label入力はデバウンス後', start);
+  const end = codeSource.indexOf('\n  // Label入力の確定後', start);
 
   assert.notEqual(start, -1, 'arrow update handler must exist');
   assert.notEqual(end, -1, 'arrow update handler must end before label updates');

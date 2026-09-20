@@ -126,13 +126,26 @@ test('debounced edits keep their original arrow id and are cancelled on selectio
   assert.match(uiSource, /const arrowId = currentArrowId;/);
   assert.match(uiSource, /if \(currentArrowId !== arrowId\) return;/);
   assert.match(uiSource, /type: 'update-arrow', arrowId, silent: silent === true, \.\.\.o/);
-  assert.match(uiSource, /type: 'update-arrow-label', arrowId, label/);
 
   const selectionBranch = uiSource.slice(
     uiSource.indexOf("if (msg.type === 'selection-update')"),
     uiSource.indexOf("if (msg.type === 'edit-arrow')")
   );
   assert.match(selectionBranch, /cancelPendingEditUpdates\(\);/);
+});
+
+test('label editing redraws only after the changed input loses focus', () => {
+  const start = uiSource.indexOf('function sendLabelUpdate()');
+  const end = uiSource.indexOf('\n    // strokeWeight', start);
+
+  assert.notEqual(start, -1, 'label update helper must exist');
+  assert.notEqual(end, -1, 'label update helper must end before stroke helpers');
+  const handler = uiSource.slice(start, end);
+
+  assert.match(handler, /type: 'update-arrow-label', arrowId, label/);
+  assert.doesNotMatch(handler, /setTimeout/);
+  assert.match(uiSource, /editLabelInput'\)\.addEventListener\('change', sendLabelUpdate\)/);
+  assert.doesNotMatch(uiSource, /editLabelInput'\)\.addEventListener\('input', sendLabelUpdate\)/);
 });
 
 test('create and edit options use a finite validated stroke weight', () => {

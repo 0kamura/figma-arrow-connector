@@ -1386,7 +1386,7 @@ figma.ui.onmessage = async (msg) => {
     if (msg.silent !== true) figma.notify("矢印を更新しました");
   }
 
-  // Label入力はデバウンス後に再描画し、変化した文字幅へ線のギャップを追従させる。
+  // Label入力の確定後に再描画し、変化した文字幅へ線のギャップを追従させる。
   if (msg.type === "update-arrow-label") {
     const { arrowId, label } = msg;
     const newLabel = label || "";
