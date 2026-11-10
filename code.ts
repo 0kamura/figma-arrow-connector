@@ -892,6 +892,7 @@ function syncRefreshRelaunchData(
 }
 
 // 選択状態をUIに送信
+let uiReady = false;
 let selectionStateRequestId = 0;
 async function sendSelectionState() {
   const requestId = ++selectionStateRequestId;
@@ -943,17 +944,15 @@ async function sendSelectionState() {
 
 // 選択変更の監視
 figma.on("selectionchange", () => {
+  if (!uiReady) return;
   void sendSelectionState().catch((e) => console.error("sendSelectionState failed:", e));
 });
 
-// 初期状態送信
-void sendSelectionState().catch((e) => console.error("sendSelectionState failed:", e));
+type ColorSwatch = { name: string; hex: string; group: string };
+let colorSwatchesRequested = false;
 
-syncRefreshRelaunchData(figma.currentPage, []);
-
-// カラースタイル・バリアブルをUIに送信
-async function sendColorSwatches() {
-  const swatches: { name: string; hex: string; group: string }[] = [];
+async function collectLocalColorSwatches(): Promise<ColorSwatch[]> {
+  const swatches: ColorSwatch[] = [];
 
   // ローカルペイントスタイル
   try {
@@ -973,10 +972,15 @@ async function sendColorSwatches() {
   // カラーバリアブル
   try {
     const colorVars = await figma.variables.getLocalVariablesAsync("COLOR");
+    const defaultModes = new Map<string, string | null>();
     for (const v of colorVars) {
-      const collection = await figma.variables.getVariableCollectionByIdAsync(v.variableCollectionId);
-      if (!collection) continue;
-      const modeId = collection.defaultModeId;
+      const collectionId = v.variableCollectionId;
+      if (!defaultModes.has(collectionId)) {
+        const collection = await figma.variables.getVariableCollectionByIdAsync(collectionId);
+        defaultModes.set(collectionId, collection?.defaultModeId ?? null);
+      }
+      const modeId = defaultModes.get(collectionId);
+      if (modeId == null) continue;
       const value = v.valuesByMode[modeId];
       if (value && typeof value === "object" && "r" in value) {
         swatches.push({
@@ -987,54 +991,63 @@ async function sendColorSwatches() {
       }
     }
   } catch {}
+  return swatches;
+}
 
-  // ページ内で使われている色を収集
+async function collectPageColorSwatches(page: PageNode): Promise<ColorSwatch[] | null> {
   const pageColors = new Set<string>();
-  function collectColors(node: SceneNode) {
-    // 矢印グループ（とその子）はスキップ
-    if (getArrowData(node)) return;
-    if ("fills" in node) {
-      const fills = node.fills;
-      if (Array.isArray(fills)) {
-        for (const fill of fills) {
-          if (fill.type === "SOLID" && fill.visible !== false) {
-            pageColors.add(rgbToHex(fill.color));
+  try {
+    const pending = [...page.children].reverse();
+    let visited = 0;
+    while (pending.length > 0) {
+      // 大きなページでは走査中も操作メッセージを処理できるようにする。
+      if (visited > 0 && visited % 250 === 0) {
+        await new Promise<void>(resolve => setTimeout(resolve, 0));
+        if (figma.currentPage.id !== page.id) return null;
+      }
+      visited++;
+      const node = pending.pop()!;
+      // 矢印グループとその子は色一覧に含めない。
+      if (node.removed || (node.type === "GROUP" && getArrowData(node))) continue;
+      if ("fills" in node) {
+        const fills = node.fills;
+        if (Array.isArray(fills)) {
+          for (const fill of fills) {
+            if (fill.type === "SOLID" && fill.visible !== false) {
+              pageColors.add(rgbToHex(fill.color));
+            }
           }
         }
       }
-    }
-    if ("strokes" in node) {
-      const strokes = node.strokes;
-      if (Array.isArray(strokes)) {
-        for (const stroke of strokes) {
+      if ("strokes" in node) {
+        for (const stroke of node.strokes) {
           if (stroke.type === "SOLID" && stroke.visible !== false) {
             pageColors.add(rgbToHex(stroke.color));
           }
         }
       }
-    }
-    if ("children" in node) {
-      for (const child of (node as ChildrenMixin).children) {
-        collectColors(child as SceneNode);
+      if ("children" in node) {
+        const children = node.children;
+        for (let i = children.length - 1; i >= 0; i--) {
+          pending.push(children[i]);
+        }
       }
-    }
-  }
-  try {
-    for (const child of figma.currentPage.children) {
-      collectColors(child);
     }
   } catch {}
 
-  const pageSwatches = Array.from(pageColors).map((hex) => ({
-    name: hex,
-    hex,
-    group: "page",
-  }));
-
-  figma.ui.postMessage({ type: "color-swatches", swatches, pageSwatches });
+  return Array.from(pageColors, hex => ({ name: hex, hex, group: "page" }));
 }
 
-sendColorSwatches();
+async function sendColorSwatches() {
+  const swatches = await collectLocalColorSwatches();
+  let pageSwatches: ColorSwatch[] | null;
+  let page: PageNode;
+  do {
+    page = figma.currentPage;
+    pageSwatches = await collectPageColorSwatches(page);
+  } while (pageSwatches === null || figma.currentPage.id !== page.id);
+  figma.ui.postMessage({ type: "color-swatches", swatches, pageSwatches });
+}
 
 // --- フレーム移動の自動追従 ---
 
@@ -1289,6 +1302,7 @@ async function refreshAllArrows(
 // 通常起動時は全矢印の再描画はせず、arrowIndexの構築だけ行う（1回のスキャンで済ませる）。
 // 全矢印の位置を実際に描き直すのは、relaunchボタン（isRelaunch）経由の明示的な操作の時だけ。
 if (isRelaunch) {
+  syncRefreshRelaunchData(figma.currentPage, []);
   (async () => {
     let count = 0;
     let errored = false;
@@ -1317,6 +1331,20 @@ if (isRelaunch) {
 figma.ui.onmessage = async (msg) => {
   if (!msg || typeof msg !== "object" || typeof msg.type !== "string") return;
   try {
+  if (msg.type === "ui-ready") {
+    if (isRelaunch || uiReady) return;
+    uiReady = true;
+    await sendSelectionState();
+    return;
+  }
+
+  if (msg.type === "load-color-swatches") {
+    if (isRelaunch || colorSwatchesRequested) return;
+    colorSwatchesRequested = true;
+    await sendColorSwatches();
+    return;
+  }
+
   if (msg.type === "add-point") {
     createPointFrame();
     figma.notify("支点を追加しました");

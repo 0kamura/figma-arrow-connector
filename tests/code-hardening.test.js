@@ -3,9 +3,124 @@ const fs = require('node:fs');
 const path = require('node:path');
 const test = require('node:test');
 const ts = require('typescript');
+const vm = require('node:vm');
 
 const codePath = path.join(__dirname, '..', 'code.ts');
 const codeSource = fs.readFileSync(codePath, 'utf8');
+
+function launchPlugin({ command = '', children = [], variables = [], selection = [] } = {}) {
+  const calls = [];
+  const messages = [];
+  const page = {
+    id: 'page:1',
+    selection,
+    get children() {
+      calls.push('page-colors');
+      return children;
+    },
+    findAllWithCriteria() {
+      calls.push('arrow-scan');
+      return [];
+    },
+    setRelaunchData() {},
+    on() {},
+  };
+  const figma = {
+    command,
+    currentPage: page,
+    showUI() {},
+    on() {},
+    closePlugin() { calls.push('close'); },
+    ui: {
+      postMessage(message) { messages.push(message); },
+    },
+    async getLocalPaintStylesAsync() {
+      calls.push('styles');
+      return [];
+    },
+    variables: {
+      async getLocalVariablesAsync() {
+        calls.push('variables');
+        return variables;
+      },
+      async getVariableCollectionByIdAsync(id) {
+        calls.push(`collection:${id}`);
+        return { defaultModeId: 'default' };
+      },
+    },
+  };
+  const timers = [];
+  const setTimeout = callback => timers.push(callback);
+  const code = ts.transpileModule(codeSource, {
+    compilerOptions: { target: ts.ScriptTarget.ES2017 },
+  }).outputText;
+  vm.runInNewContext(code, { figma, __html__: '', console, setTimeout });
+  return { figma, calls, messages, timers };
+}
+
+test('opens with the current selection while color loading waits for a separate UI request', async () => {
+  const { figma, calls, messages } = launchPlugin({
+    selection: [{ type: 'FRAME', id: '1:1', name: 'Start', getPluginData: () => '' }],
+  });
+  await figma.ui.onmessage({ type: 'ui-ready' });
+
+  assert.deepEqual(calls, ['arrow-scan']);
+  assert.equal(messages[0].type, 'selection-update');
+  assert.equal(messages[0].frames[0].name, 'Start');
+
+  await figma.ui.onmessage({ type: 'load-color-swatches' });
+  assert.equal(messages[1].type, 'color-swatches');
+  assert.deepEqual(calls.slice(1).sort(), ['page-colors', 'styles', 'variables']);
+});
+
+test('reads each color collection once while preserving swatch order and skipping arrow colors', async () => {
+  const red = { r: 1, g: 0, b: 0 };
+  const green = { r: 0, g: 1, b: 0 };
+  const blue = { r: 0, g: 0, b: 1 };
+  const shape = color => ({ type: 'RECTANGLE', fills: [{ type: 'SOLID', color }], getPluginData: () => '' });
+  const { figma, calls, messages } = launchPlugin({
+    children: [
+      { type: 'FRAME', children: [shape(blue), shape(red)], getPluginData: () => '' },
+      { type: 'GROUP', children: [shape(green)], getPluginData: () => '{"sourceId":"s","targetId":"t","options":{}}' },
+      shape(blue),
+    ],
+    variables: [
+      { name: 'Red', variableCollectionId: 'shared', valuesByMode: { default: red } },
+      { name: 'Green', variableCollectionId: 'shared', valuesByMode: { default: green } },
+    ],
+  });
+
+  await figma.ui.onmessage({ type: 'load-color-swatches' });
+  await figma.ui.onmessage({ type: 'load-color-swatches' });
+  const palette = messages.find(message => message.type === 'color-swatches');
+  assert.ok(palette);
+  assert.deepEqual(calls.filter(call => call.startsWith('collection:')), ['collection:shared']);
+  assert.deepEqual(Array.from(palette.swatches, swatch => swatch.name), ['Red', 'Green']);
+  assert.deepEqual(Array.from(palette.pageSwatches, swatch => swatch.hex), ['#0000ff', '#ff0000']);
+});
+
+test('continues loading page colors on the new page if the user switches during a scan', async () => {
+  const redShape = { type: 'RECTANGLE', fills: [{ type: 'SOLID', color: { r: 1, g: 0, b: 0 } }], getPluginData: () => '' };
+  const blueShape = { type: 'RECTANGLE', fills: [{ type: 'SOLID', color: { r: 0, g: 0, b: 1 } }], getPluginData: () => '' };
+  const { figma, messages, timers } = launchPlugin({ children: Array(600).fill(redShape) });
+
+  const load = figma.ui.onmessage({ type: 'load-color-swatches' });
+  await new Promise(setImmediate);
+  assert.equal(messages.some(message => message.type === 'color-swatches'), false);
+  assert.ok(timers.length > 0);
+  figma.currentPage = { id: 'page:2', children: [blueShape] };
+  timers.shift()();
+  await load;
+
+  const palette = messages.find(message => message.type === 'color-swatches');
+  assert.deepEqual(Array.from(palette.pageSwatches, swatch => swatch.hex), ['#0000ff']);
+});
+
+test('refresh relaunch closes without loading any color data', async () => {
+  const { calls } = launchPlugin({ command: 'refresh-all' });
+  await new Promise(setImmediate);
+  assert.deepEqual(calls, ['arrow-scan', 'close']);
+});
 
 test('opens the expanded plugin at the height required by the polished layout', () => {
   assert.match(codeSource, /figma\.showUI\(__html__, \{ width: 340, height: 584,/);

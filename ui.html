@@ -1330,7 +1330,7 @@
     document.getElementById('editColorBox').addEventListener('click', () => editColorPicker.click());
 
     // ---- Style dropdown ----
-    let allSwatches = [];
+    let allSwatches = null;
 
     function setupDD(selId, panelId, tabsId, listId, pickerId, hexId, swatchId, isEdit) {
       const sel = document.getElementById(selId);
@@ -1356,6 +1356,10 @@
       });
       function render() {
         list.innerHTML = '';
+        if (allSwatches === null) {
+          list.innerHTML = '<div style="padding:12px;text-align:center;color:#b9b9b9;font-size:11px">Loading colors…</div>';
+          return;
+        }
         const items = allSwatches.filter(s => s.group === tab);
         if (!items.length) { list.innerHTML = '<div style="padding:12px;text-align:center;color:#b9b9b9;font-size:11px">No items</div>'; return; }
         for (const it of items) {
@@ -1389,9 +1393,12 @@
           list.appendChild(el);
         }
       }
+      return () => {
+        if (panel.classList.contains('open')) render();
+      };
     }
-    setupDD('styleSelect','dropdownPanel','ddTabs','ddList','colorPicker','colorHex','colorSwatch', false);
-    setupDD('editStyleSelect','editDropdownPanel','editDdTabs','editDdList','editColorPicker','editColorHex','editColorSwatch', true);
+    const refreshCreateDropdown = setupDD('styleSelect','dropdownPanel','ddTabs','ddList','colorPicker','colorHex','colorSwatch', false);
+    const refreshEditDropdown = setupDD('editStyleSelect','editDropdownPanel','editDdTabs','editDdList','editColorPicker','editColorHex','editColorSwatch', true);
     document.addEventListener('click', () => { document.querySelectorAll('.dropdown-panel').forEach(d => d.classList.remove('open')); });
 
     let allPageSwatches = [];
@@ -1453,6 +1460,8 @@
         allSwatches = msg.swatches;
         allPageSwatches = Array.isArray(msg.pageSwatches) ? msg.pageSwatches : [];
         renderSwatchGrids();
+        refreshCreateDropdown();
+        refreshEditDropdown();
       }
 
       if (msg.type === 'selection-update') {
@@ -1894,6 +1903,14 @@
     // arrow dir selects
     document.getElementById('editArrowDirStart').addEventListener('change', sendEditUpdate);
     document.getElementById('editArrowDirEnd').addEventListener('change', sendEditUpdate);
+
+    parent.postMessage({ pluginMessage: { type: 'ui-ready' } }, '*');
+    // 先に画面を描画してから、ページを走査する色一覧の取得を始める。
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        parent.postMessage({ pluginMessage: { type: 'load-color-swatches' } }, '*');
+      });
+    });
   </script>
 </body>
 </html>
